@@ -6,7 +6,7 @@ WanderFolk is a simple travel planner agent for a group of friends. Everyone say
 
 ## How it works
 
-1. **Start a trip:** give it a name, a start city, the number of days, and up to 12 people. No destination needed yet.
+1. **Start a trip:** give it a name, a start city, the number of days, and up to 12 people. No destination needed yet. You get an invite link to share; only people with the link can open the trip.
 2. **Everyone's input:** pick who's adding, then fill in any of four boxes: places you'd love, food and dietary needs, how you like to travel, and your own idea for this trip. Anything can be marked private.
 3. **Packing list:** everyone brainstorms what to bring and ticks things off as they're packed.
 4. **Proposals:** WanderFolk suggests 5-6 destinations, each with why it fits the group, what to watch out for, rough travel time and budget. Vote, then choose one, or type your own.
@@ -44,6 +44,8 @@ ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
 It also runs with no keys at all: memory falls back to a local file, proposals come from a small built-in list of places, and the itinerary comes from simple rules.
+
+Optional: set `CREATE_CODE=some-word` to require that word before anyone can start a new trip. Joining a trip by its link never needs it.
 
 Tests: `python -m unittest discover tests -v`
 

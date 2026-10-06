@@ -9,11 +9,12 @@ an itinerary and the reason behind every choice.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 import uuid
 from datetime import datetime
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus, unquote, urlsplit
 
 from dotenv import load_dotenv
 
@@ -24,15 +25,15 @@ import streamlit as st  # noqa: E402
 import llm  # noqa: E402
 import planner  # noqa: E402
 import style  # noqa: E402
-from memory_store import AGENT_ID, APP_ID, TripStore, make_store, traveler_id  # noqa: E402
+from memory_store import APP_ID, TripStore, make_store, traveler_id  # noqa: E402
 
 st.set_page_config(page_title="WanderFolk", page_icon="🏔️", layout="wide")
 st.markdown(style.CSS, unsafe_allow_html=True)
 
 BUCKET = "trips"          # key for this app's trips in the local trips file
-NAMESPACE = "roamory"     # one Mem0 user_id per person, shared by all their trips
 MAX_MEMBERS = 12
-NEW_TRIP = "➕ Start a new trip"
+MAX_SUGGESTS, MAX_PLANS = 6, 15                   # AI runs per trip, so one trip can't run up the bill
+CREATE_CODE = os.getenv("CREATE_CODE", "").strip()  # if set, starting a trip needs this code; joining never does
 
 T_INPUT, T_PACK, T_PROPS = "📝 Everyone's input", "🎒 Packing list", "💡 Proposals"
 T_TRIP, T_AFTER, T_MEMORY = "🗺️ Our trip", "💬 After the trip", "🧠 Memory"
@@ -81,35 +82,39 @@ def maps_search(place: str) -> str:
     return f"https://www.google.com/maps/search/?api=1&query={quote_plus(place)}"
 
 
-# A widget's value can't be changed once it's on the page, so jumps set here apply at the start of the next run.
-for pending, key in (("goto_trip", "trip_pick"), ("goto_tab", "tab")):
-    if pending in ss:
-        ss[key] = ss.pop(pending)
+def find_trip(text: str) -> dict | None:
+    """Accepts a trip code or a whole invite link."""
+    link = re.search(r"[?&]trip=([^&\s]+)", text)
+    return trips_db.get(BUCKET, unquote(link.group(1)) if link else text.strip())
+
+
+def open_trip(trip_id: str) -> None:
+    st.query_params["trip"] = trip_id
+    st.rerun()
+
+
+# A widget's value can't be changed once it's on the page, so a tab jump set here applies at the start of the next run.
+if "goto_tab" in ss:
+    ss["tab"] = ss.pop("goto_tab")
 if "flash" in ss:
     st.toast(ss.pop("flash"))
-
-# ---------------------------------------------------------------------------
-# Sidebar: which trip
-# ---------------------------------------------------------------------------
-
-all_trips = sorted(trips_db.list(BUCKET), key=lambda t: t["created_at"], reverse=True)
-trip_names = {t["id"]: t["name"] for t in all_trips}
 
 with st.sidebar:
     st.title("🏔️ WanderFolk")
     st.caption("A simple travel planner agent for your group.")
-    options = list(trip_names) + [NEW_TRIP]
-    if ss.get("trip_pick") not in options:
-        ss["trip_pick"] = options[0]
-    pick = st.selectbox("Your trips", options, format_func=lambda i: trip_names.get(i, NEW_TRIP), key="trip_pick")
 
 # ---------------------------------------------------------------------------
-# Start a new trip
+# No trip open: start one, or join one with its link. There is no public list of trips.
 # ---------------------------------------------------------------------------
 
-if pick == NEW_TRIP:
+trip = trips_db.get(BUCKET, st.query_params.get("trip", ""))
+
+if not trip:
     st.markdown(style.hero(), unsafe_allow_html=True)
-    with st.container(border=True):
+    if st.query_params.get("trip"):
+        st.warning("That link doesn't match a trip. Check it with whoever sent it, or start a new trip.")
+    left, right = st.columns([3, 2], gap="large")
+    with left, st.container(border=True):
         st.subheader("Start a group trip")
         st.caption("Name the trip and add who's coming. You don't need a destination yet: "
                    "WanderFolk will propose some once everyone has had their say.")
@@ -120,28 +125,54 @@ if pick == NEW_TRIP:
             days_in = c.number_input("Days", 1, 7, 3)
             members_in = st.text_area(f"Who's coming? (up to {MAX_MEMBERS})", height=120,
                                       placeholder="One name per line, or separated by commas")
+            earlier_in = st.text_input("Travelled together before? (optional)",
+                                       placeholder="Paste that trip's link to carry over dietary needs and feedback")
+            code_in = st.text_input("Access code", type="password") if CREATE_CODE else ""
             if st.form_submit_button("Create trip", type="primary"):
                 people = parse_names(members_in)
-                if not name_in.strip():
+                earlier = find_trip(earlier_in) if earlier_in.strip() else None
+                if CREATE_CODE and code_in.strip() != CREATE_CODE:
+                    st.warning("That access code isn't right. Ask whoever runs this app for it.")
+                elif not name_in.strip():
                     st.warning("Give the trip a name.")
                 elif not people:
                     st.warning("Add at least one person.")
                 elif len(people) > MAX_MEMBERS:
                     st.warning(f"That's {len(people)} people. WanderFolk handles up to {MAX_MEMBERS} for now.")
+                elif earlier_in.strip() and not earlier:
+                    st.warning("That earlier trip link doesn't match a trip. Fix it or leave the box empty.")
                 else:
                     slug = re.sub(r"[^a-z0-9]+", "-", name_in.lower()).strip("-") or "trip"
-                    new = {"id": f"{slug}-{uuid.uuid4().hex[:6]}", "name": name_in.strip(),
+                    # crew: the group of friends. Trips that share a crew share what WanderFolk knows about each person.
+                    new = {"id": f"{slug}-{uuid.uuid4().hex[:10]}", "name": name_in.strip(),
+                           "crew": earlier["crew"] if earlier and earlier.get("crew") else uuid.uuid4().hex[:10],
                            "origin": origin_in.strip(), "days": int(days_in), "members": people,
                            "created_at": datetime.now().isoformat(timespec="seconds"),
                            "packing": [], "proposals": [], "votes": {}, "chosen": None, "plan": None}
                     trips_db.save(BUCKET, new)
-                    ss["goto_trip"] = new["id"]
-                    flash(f"{new['name']} created")
-                    st.rerun()
+                    flash(f"{new['name']} created. Invite the others with the link.")
+                    open_trip(new["id"])
+    with right, st.container(border=True):
+        st.subheader("Join a trip")
+        st.caption("Got a link from a friend? Open it, or paste it here.")
+        with st.form("join_trip", border=False):
+            link_in = st.text_input("Trip link or code", placeholder="Paste it here")
+            if st.form_submit_button("Open trip"):
+                found = find_trip(link_in)
+                if found:
+                    open_trip(found["id"])
+                st.warning("That doesn't match a trip. Check it with whoever sent it.")
+        # Only on your own computer: a hosted app must never list other people's trips.
+        if urlsplit(st.context.url or "").hostname in ("localhost", "127.0.0.1"):
+            for t in sorted(trips_db.list(BUCKET), key=lambda t: t["created_at"], reverse=True):
+                if st.button(f"🗺️ {t['name']}", key=f"open_{t['id']}", width="stretch"):
+                    open_trip(t["id"])
     st.stop()
 
-trip = next(t for t in all_trips if t["id"] == pick)
 members = trip["members"]
+crew = trip.get("crew") or "roamory"
+people_ids = [traveler_id(crew, person) for person in members]
+invite_link = f"{(st.context.url or '').split('?')[0]}?trip={quote(trip['id'])}"
 
 
 def save_trip() -> None:
@@ -153,10 +184,10 @@ def save_trip() -> None:
 
 
 def remember(name: str, text: str, kind: str, private: bool = False) -> bool:
-    meta = {"type": kind, "traveler": name, "private": private, "group": NAMESPACE,
+    meta = {"type": kind, "traveler": name, "private": private, "group": crew,
             "trip_id": trip["id"], "trip_name": trip["name"]}
     try:
-        store.add(text, traveler_id(NAMESPACE, name), meta, run_id=trip["id"] if kind == "feedback" else None)
+        store.add(text, traveler_id(crew, name), meta, run_id=trip["id"] if kind == "feedback" else None)
     except Exception as e:
         st.error(f"Couldn't save that ({e.__class__.__name__}). Check your connection and try again.")
         return False
@@ -170,28 +201,20 @@ def forget(memory_id: str) -> None:
 
 
 def read_memories() -> tuple[list[dict], str]:
-    """Everything Mem0 holds for this app, kept for 30 seconds so every click isn't a round trip."""
+    """What Mem0 holds for this group's people, kept for 30 seconds so every click isn't a round trip."""
     cache = ss.get("mem")
-    if not cache or cache["trip"] != trip["id"] or time.time() - cache["at"] > 30:
-        scope = f"Mem0 shared scope: agent_id={AGENT_ID}, app_id={APP_ID}"
+    if not cache or cache["trip"] != trip["id"] or cache["people"] != people_ids or time.time() - cache["at"] > 30:
         try:
-            found = store.shared()
+            found = store.for_travelers(people_ids)
         except Exception:
             found = []
-        if not found:  # fallback: read each traveler's own scope and merge
-            scope = "Mem0 per-traveler scopes (user_id), merged"
-            for person in members:
-                try:
-                    found += store.for_traveler(traveler_id(NAMESPACE, person))
-                except Exception:
-                    pass
-        cache = ss["mem"] = {"trip": trip["id"], "at": time.time(), "items": found, "scope": scope}
-    return cache["items"], cache["scope"]
+        cache = ss["mem"] = {"trip": trip["id"], "people": people_ids, "at": time.time(), "items": found}
+    return cache["items"], f"Mem0 user_id scopes for this group ({len(people_ids)} people), app_id={APP_ID}"
 
 
 everything, scope_label = read_memories()
 # What counts for this trip: what people said for it, plus what WanderFolk already knows about them from earlier trips.
-memories = [m for m in everything if m.get("group") == NAMESPACE and m.get("traveler") in members
+memories = [m for m in everything if m.get("group") == crew and m.get("traveler") in members
             and (m.get("trip_id") == trip["id"] or m.get("type") in REMEMBERED)]
 for m in memories:
     m["traveler_name"] = m["traveler"]
@@ -203,6 +226,12 @@ no_input_yet = [p for p in members if not any(m["traveler"] == p for m in notes)
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
+    st.markdown("##### Invite the group")
+    st.caption("Anyone with this link can open the trip and add their input. Share it only with the group.")
+    st.code(invite_link, language=None, wrap_lines=True)
+    if st.button("← Leave this trip", width="stretch", help="Back to the start page. Nothing is deleted."):
+        del st.query_params["trip"]
+        st.rerun()
     if st.button("🔄 Refresh", width="stretch", help="Pick up anything added from another device."):
         ss.pop("mem", None)
         st.rerun()
@@ -239,6 +268,7 @@ with st.sidebar:
             trips_db.delete(BUCKET, trip["id"])
             ss.pop("mem", None)
             flash("Trip deleted")
+            del st.query_params["trip"]
             st.rerun()
 
 # ---------------------------------------------------------------------------
@@ -266,8 +296,11 @@ def waiting_on(names: list[str], done_text: str, waiting_text: str) -> None:
 
 def make_plan() -> None:
     """Build the itinerary for the chosen destination from everything the group has said."""
+    if trip.get("plan_runs", 0) >= MAX_PLANS:
+        flash(f"This trip has reached its limit of {MAX_PLANS} plans.")
+        return
     trip["plan"] = planner.plan_trip(trip["chosen"]["destination"], int(trip["days"]), members, memories)
-    trip["memories_used"] = len(memories)
+    trip["memories_used"], trip["plan_runs"] = len(memories), trip.get("plan_runs", 0) + 1
     save_trip()
 
 
@@ -427,10 +460,12 @@ with tab_props:
     st.caption("WanderFolk reads everyone's input and suggests trips that fit the whole group.")
     waiting_on(no_input_yet, "Everyone has added their input.", "No input yet from")
     if st.button("✨ Suggest trips for us" if not trip["proposals"] else "✨ Suggest again with the latest input",
-                 type="primary"):
+                 type="primary", disabled=trip.get("suggest_runs", 0) >= MAX_SUGGESTS,
+                 help=f"Up to {MAX_SUGGESTS} rounds of proposals per trip."):
         with st.spinner("Reading everyone's input and looking for places that fit..."):
             found, engine = planner.propose_trips(trip.get("origin", ""), int(trip["days"]), members, memories)
-        trip.update(proposals=[{"id": uuid.uuid4().hex[:8], **p} for p in found], votes={}, proposals_engine=engine)
+        trip.update(proposals=[{"id": uuid.uuid4().hex[:8], **p} for p in found], votes={}, proposals_engine=engine,
+                    suggest_runs=trip.get("suggest_runs", 0) + 1)
         save_trip()
         flash(f"{style.count(len(found), 'proposal')} ready")
         st.rerun()
@@ -550,7 +585,7 @@ with tab_memory:
         asked = b.form_submit_button("Search", width="stretch")
     if asked:
         try:
-            hits = [m for m in store.search(q) if m.get("group") == NAMESPACE and m.get("traveler") in members]
+            hits = [m for m in store.search(q, user_ids=people_ids) if m.get("group") == crew and m.get("traveler") in members]
         except Exception as e:
             hits = []
             st.warning(f"Search failed: {e}")

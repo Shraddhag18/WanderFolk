@@ -86,6 +86,9 @@ class LocalStore:
     def for_traveler(self, user_id: str) -> list[dict]:
         return [_normalize(i) for i in self._read() if i.get("user_id") == user_id]
 
+    def for_travelers(self, user_ids: list[str]) -> list[dict]:
+        return [_normalize(i) for i in self._read() if i.get("user_id") in user_ids]
+
     def shared(self) -> list[dict]:
         """Everything the planner agent knows, across all travelers (agent_id + app_id scope)."""
         return [_normalize(i) for i in self._read() if i.get("agent_id") == AGENT_ID]
@@ -93,9 +96,10 @@ class LocalStore:
     def for_trip(self, run_id: str) -> list[dict]:
         return [_normalize(i) for i in self._read() if i.get("run_id") == run_id]
 
-    def search(self, query: str, limit: int = 6) -> list[dict]:
+    def search(self, query: str, limit: int = 6, user_ids: list[str] | None = None) -> list[dict]:
         words = set(re.findall(r"[a-z]{3,}", query.lower()))
-        scored = [(len(words & set(re.findall(r"[a-z]{3,}", m["memory"].lower()))), m) for m in self.shared()]
+        pool = self.for_travelers(user_ids) if user_ids else self.shared()
+        scored = [(len(words & set(re.findall(r"[a-z]{3,}", m["memory"].lower()))), m) for m in pool]
         return [m for s, m in sorted(scored, key=lambda x: -x[0]) if s][:limit]
 
     def delete(self, memory_id: str) -> None:
@@ -139,15 +143,23 @@ class Mem0Store:
         except TypeError:
             return [_normalize(i) for i in _results(self.client.get_all(user_id=user_id))]
 
+    def for_travelers(self, user_ids: list[str]) -> list[dict]:
+        """One group's people in one request, so a hosted app never reads other groups' memories."""
+        try:
+            return self._get_all({"OR": [{"user_id": u} for u in user_ids]})
+        except Exception:
+            return [m for u in user_ids for m in self.for_traveler(u)]
+
     def shared(self) -> list[dict]:
         return self._get_all({"AND": [{"agent_id": AGENT_ID}, {"app_id": APP_ID}]})
 
     def for_trip(self, run_id: str) -> list[dict]:
         return self._get_all({"run_id": run_id})
 
-    def search(self, query: str, limit: int = 6) -> list[dict]:
-        resp = self.client.search(query, filters={"AND": [{"agent_id": AGENT_ID}, {"app_id": APP_ID}]},
-                                  top_k=limit)
+    def search(self, query: str, limit: int = 6, user_ids: list[str] | None = None) -> list[dict]:
+        scope = {"OR": [{"user_id": u} for u in user_ids]} if user_ids else \
+            {"AND": [{"agent_id": AGENT_ID}, {"app_id": APP_ID}]}
+        resp = self.client.search(query, filters=scope, top_k=limit)
         return [_normalize(i) for i in _results(resp)]
 
     def delete(self, memory_id: str) -> None:
@@ -195,6 +207,9 @@ class TripStore:
 
     def list(self, group: str) -> list[dict]:
         return self._read().get(group, [])
+
+    def get(self, group: str, trip_id: str) -> dict | None:
+        return next((t for t in self.list(group) if t["id"] == trip_id), None)
 
     def save(self, group: str, trip: dict) -> None:
         with _lock:
