@@ -33,8 +33,14 @@ Private notes are used for planning but never shown to the group. A privacy guar
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env      # add MEM0_API_KEY and ANTHROPIC_API_KEY
 streamlit run app.py
+```
+
+To use Mem0 and Claude, create a file named `.env` next to `app.py` with your own keys:
+
+```
+MEM0_API_KEY=your-mem0-key
+ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
 It also runs with no keys at all: memory falls back to a local file, proposals come from a small built-in list of places, and the itinerary comes from simple rules.
