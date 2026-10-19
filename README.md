@@ -23,7 +23,7 @@ WanderFolk keeps what people tell it in [Mem0](https://mem0.ai), so nobody has t
 | Feedback on a trip | Mem0 `run_id`, one per trip | Priya: "The 7am hike was way too early" |
 | Everything the planner knows | Mem0 `agent_id` + `app_id`, across everyone | "Who has food or dietary needs?" |
 | Private notes | Mem0 metadata `private: true` | Maya: "Budget about $100 a day" |
-| Trips, votes, packing list, itinerary | A local JSON file in `.data/` | |
+| Trips, votes, packing list, itinerary | Supabase when configured, otherwise a local file in `.data/` | |
 
 Dietary needs, travel style and feedback carry over to each person's next trip. Places and ideas belong to one trip only.
 
@@ -49,13 +49,28 @@ Optional: set `CREATE_CODE=some-word` to require that word before anyone can sta
 
 Tests: `python -m unittest discover tests -v`
 
+## Hosting it
+
+Trips are saved to a local file by default, which hosting platforms wipe on restart. For a hosted app, keep them in Supabase:
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In its **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql) once.
+3. From **Project Settings → API**, add these to your `.env` (or your host's secrets):
+
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-service-role-key
+```
+
+Then deploy on [Streamlit Community Cloud](https://share.streamlit.io): pick this repo, `app.py`, and paste the same keys under **Secrets**.
+
 ## Files
 
 | File | What it does |
 |---|---|
 | `app.py` | The Streamlit app: create a trip, then Everyone's input, Packing list, Proposals, Our trip, After the trip, Memory |
 | `planner.py` | Proposes destinations, builds the itinerary with a cited reason for every choice, and runs the privacy guard |
-| `memory_store.py` | Mem0 scopes (`user_id`, `run_id`, `agent_id`, `app_id`) with an offline fallback, plus the local trips file |
+| `memory_store.py` | Mem0 scopes (`user_id`, `run_id`, `agent_id`, `app_id`) with an offline fallback, plus where trips are saved (local file or Supabase) |
 | `llm.py` | Claude / OpenAI wrapper |
 | `style.py` | Look and feel: the stylesheet and the HTML cards |
 

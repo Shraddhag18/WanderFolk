@@ -25,7 +25,7 @@ import streamlit as st  # noqa: E402
 import llm  # noqa: E402
 import planner  # noqa: E402
 import style  # noqa: E402
-from memory_store import APP_ID, TripStore, make_store, traveler_id  # noqa: E402
+from memory_store import APP_ID, make_store, make_trip_store, traveler_id  # noqa: E402
 
 st.set_page_config(page_title="WanderFolk", page_icon="🏔️", layout="wide")
 st.markdown(style.CSS, unsafe_allow_html=True)
@@ -54,8 +54,13 @@ def get_store():
     return make_store()
 
 
+@st.cache_resource
+def get_trip_store():
+    return make_trip_store()
+
+
 store, store_warning = get_store()
-trips_db = TripStore()
+trips_db = get_trip_store()
 ss = st.session_state
 
 
@@ -253,7 +258,8 @@ with st.sidebar:
                     st.rerun()
     with st.expander("⚙️ Under the hood"):
         st.markdown(style.status("Memory", store.name + ("" if store.is_live else " (offline mode)"), store.is_live)
-                    + style.status("AI model", llm.provider_label(), llm.provider() is not None),
+                    + style.status("AI model", llm.provider_label(), llm.provider() is not None)
+                    + style.status("Trips", trips_db.name, trips_db.name != "Local file"),
                     unsafe_allow_html=True)
         if store_warning:
             st.warning(store_warning)

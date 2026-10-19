@@ -194,6 +194,9 @@ def community_id(destination: str) -> str:
 # ---- trips registry (the itineraries are app data; Mem0 holds what people told us) ----
 
 class TripStore:
+    """Trips in a JSON file next to the app. Fine on your own computer; hosted servers wipe it on restart."""
+    name = "Local file"
+
     def __init__(self, path: Path | None = None):
         self.path = path or DATA_DIR / "trips.json"
 
@@ -233,3 +236,50 @@ class TripStore:
             data.pop(group, None)
             DATA_DIR.mkdir(exist_ok=True)
             self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+class SupabaseTripStore:
+    """
+    Trips in a Supabase table, so they survive restarts of a hosted app. Same methods as TripStore.
+    Table (see supabase/schema.sql): trips(id text primary key, bucket text, data jsonb, created_at timestamptz).
+    """
+    name = "Supabase"
+
+    def __init__(self, url: str, key: str, client=None):
+        import httpx
+        self.base = url.rstrip("/") + "/rest/v1/trips"
+        self.client = client or httpx.Client(timeout=15, headers={"apikey": key, "Authorization": f"Bearer {key}"})
+
+    def _check(self, resp):
+        if resp.status_code >= 400:
+            raise RuntimeError(f"Supabase {resp.status_code}: {resp.text[:200]}")
+        return resp
+
+    def list(self, group: str) -> list[dict]:
+        resp = self._check(self.client.get(self.base, params={"bucket": f"eq.{group}", "select": "data",
+                                                              "order": "created_at.asc"}))
+        return [row["data"] for row in resp.json()]
+
+    def get(self, group: str, trip_id: str) -> dict | None:
+        if not trip_id:
+            return None
+        resp = self._check(self.client.get(self.base, params={"bucket": f"eq.{group}", "id": f"eq.{trip_id}",
+                                                              "select": "data"}))
+        rows = resp.json()
+        return rows[0]["data"] if rows else None
+
+    def save(self, group: str, trip: dict) -> None:
+        self._check(self.client.post(self.base, json={"id": trip["id"], "bucket": group, "data": trip},
+                                     headers={"Prefer": "resolution=merge-duplicates,return=minimal"}))
+
+    def delete(self, group: str, trip_id: str) -> None:
+        self._check(self.client.delete(self.base, params={"bucket": f"eq.{group}", "id": f"eq.{trip_id}"}))
+
+    def clear(self, group: str) -> None:
+        self._check(self.client.delete(self.base, params={"bucket": f"eq.{group}"}))
+
+
+def make_trip_store():
+    """Supabase when SUPABASE_URL and SUPABASE_KEY are set, otherwise the local file."""
+    url, key = os.getenv("SUPABASE_URL", "").strip(), os.getenv("SUPABASE_KEY", "").strip()
+    return SupabaseTripStore(url, key) if url and key else TripStore()

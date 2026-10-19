@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.pop("ANTHROPIC_API_KEY", None); os.environ.pop("OPENAI_API_KEY", None)
 import planner
-from memory_store import LocalStore, traveler_id
+from memory_store import LocalStore, SupabaseTripStore, traveler_id
 
 
 def m(who, text, kind="preference", private=False, trip=""):
@@ -124,6 +124,35 @@ class Proposals(unittest.TestCase):
         text = " ".join(" ".join(p["why"]) + p["tagline"] + p["watch_out"] for p in proposals)
         self.assertNotIn("$100", text)
         self.assertNotIn("Maya", text)
+
+
+class SupabaseTrips(unittest.TestCase):
+    def test_trips_round_trip_through_the_supabase_api(self):
+        import httpx, json as _json
+        rows = {}
+
+        def api(request):
+            q = dict(request.url.params)
+            if request.method == "POST":
+                body = _json.loads(request.content)
+                rows[body["id"]] = body
+                return httpx.Response(201)
+            match = [r for r in rows.values() if f"eq.{r['bucket']}" == q.get("bucket")
+                     and ("id" not in q or f"eq.{r['id']}" == q["id"])]
+            if request.method == "DELETE":
+                for r in match:
+                    rows.pop(r["id"])
+                return httpx.Response(204)
+            return httpx.Response(200, json=[{"data": r["data"]} for r in match])
+
+        store = SupabaseTripStore("https://x.supabase.co", "key", client=httpx.Client(transport=httpx.MockTransport(api)))
+        store.save("trips", {"id": "t1", "name": "Tahoe"})
+        store.save("trips", {"id": "t1", "name": "Tahoe weekend"})   # same id updates, doesn't duplicate
+        self.assertEqual(store.get("trips", "t1")["name"], "Tahoe weekend")
+        self.assertEqual(len(store.list("trips")), 1)
+        self.assertIsNone(store.get("trips", "nope"))
+        store.delete("trips", "t1")
+        self.assertEqual(store.list("trips"), [])
 
 
 if __name__ == "__main__":
