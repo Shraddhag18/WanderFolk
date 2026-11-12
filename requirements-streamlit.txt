@@ -1,0 +1,3 @@
+# The original Streamlit version (streamlit_app.py). Install with: pip install -r requirements-streamlit.txt
+-r requirements.txt
+streamlit>=1.40
