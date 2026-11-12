@@ -247,7 +247,9 @@ class SupabaseTripStore:
 
     def __init__(self, url: str, key: str, client=None):
         import httpx
-        self.base = url.rstrip("/") + "/rest/v1/trips"
+        url = url.strip().rstrip("/")
+        url = url.removesuffix("/rest/v1")  # accept the URL with or without /rest/v1, as copied from the dashboard
+        self.base = url + "/rest/v1/trips"
         self.client = client or httpx.Client(timeout=15, headers={"apikey": key, "Authorization": f"Bearer {key}"})
 
     def _check(self, resp):

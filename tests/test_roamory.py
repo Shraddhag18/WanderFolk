@@ -154,6 +154,11 @@ class SupabaseTrips(unittest.TestCase):
         store.delete("trips", "t1")
         self.assertEqual(store.list("trips"), [])
 
+    def test_url_copied_with_rest_v1_still_works(self):
+        for url in ("https://x.supabase.co", "https://x.supabase.co/", "https://x.supabase.co/rest/v1/", " https://x.supabase.co/rest/v1 "):
+            store = SupabaseTripStore(url, "key", client=object())
+            self.assertEqual(store.base, "https://x.supabase.co/rest/v1/trips")
+
 
 if __name__ == "__main__":
     unittest.main()
