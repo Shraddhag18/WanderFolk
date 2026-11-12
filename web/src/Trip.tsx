@@ -227,7 +227,7 @@ function WhoAreYou({ members, onPick }: { members: string[]; onPick: (n: string)
 function Menu({ view, config, act, onClose }: { view: TripView; config: Config | null; act: Act; onClose: () => void }) {
   const toast = useToast();
   const { trip } = view;
-  const link = `${location.origin}/?trip=${encodeURIComponent(trip.id)}`;
+  const link = `${location.origin}/trip/?trip=${encodeURIComponent(trip.id)}`;
   const [edit, setEdit] = useState({ origin: trip.origin, days: trip.days, members: trip.members.join("\n") });
   const [sure, setSure] = useState(false);
 

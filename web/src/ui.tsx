@@ -1,9 +1,13 @@
 // Small shared pieces: toasts, local storage, avatars, and display helpers.
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
-// ---- navigation: the open trip lives in the address bar as ?trip=<id> ----
+// ---- navigation: a trip lives at /trip/?trip=<id> ----
 export function go(tripId: string | null) {
-  const url = tripId ? `/?trip=${encodeURIComponent(tripId)}` : "/";
+  if (!tripId) {
+    location.href = "/"; // the start page is its own page
+    return;
+  }
+  const url = `/trip/?trip=${encodeURIComponent(tripId)}`;
   history.pushState(null, "", url);
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo(0, 0);

@@ -24,7 +24,6 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
-from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 import llm  # noqa: E402
@@ -448,11 +447,14 @@ def replan(trip_id: str):
 
 PUBLIC = Path(__file__).parent / "public"
 if (PUBLIC / "index.html").exists():
-    app.mount("/assets", StaticFiles(directory=PUBLIC / "assets", check_dir=False), name="assets")
-
     @app.get("/{path:path}", include_in_schema=False)
     def web(path: str):
+        """The start page at /, the trip app at /trip/, and their files; anything else gets the start page."""
         file = (PUBLIC / path).resolve()
-        if path and file.is_file() and PUBLIC.resolve() in file.parents:
+        if PUBLIC.resolve() not in [file, *file.parents]:
+            return FileResponse(PUBLIC / "index.html")
+        if file.is_dir() and (file / "index.html").is_file():
+            return FileResponse(file / "index.html")
+        if file.is_file():
             return FileResponse(file)
         return FileResponse(PUBLIC / "index.html")

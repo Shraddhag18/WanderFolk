@@ -1,7 +1,6 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Config } from "./api";
-import Home from "./Home";
 import TripPage from "./Trip";
 import { ToastHost } from "./ui";
 import "./styles.css";
@@ -23,7 +22,11 @@ function App() {
     api<Config>("/config").then(setConfig).catch(() => setConfig(null));
   }, []);
 
-  return tripId ? <TripPage key={tripId} tripId={tripId} config={config} /> : <Home config={config} />;
+  if (!tripId) {
+    location.replace("/");
+    return null;
+  }
+  return <TripPage key={tripId} tripId={tripId} config={config} />;
 }
 
 createRoot(document.getElementById("root")!).render(

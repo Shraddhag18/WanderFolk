@@ -8,3 +8,4 @@ venv/
 .DS_Store
 /public/
 web/node_modules/
+.taste-skill/

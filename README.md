@@ -43,10 +43,10 @@ Then, in two terminals:
 
 ```bash
 uvicorn server:app --reload --port 8000     # the API
-cd web && npm run dev                       # the web app, at http://localhost:5173
+cd web && npm run dev                       # the trip app, at http://localhost:5173/trip/
 ```
 
-Or build the web app once (`cd web && npm run build`) and run only `uvicorn server:app --port 8000`, which then serves the app at http://localhost:8000.
+Or build once (`cd web && npm run build`) and run only `uvicorn server:app --port 8000`, which then serves the start page at http://localhost:8000 and trips at http://localhost:8000/trip/.
 
 To use Mem0 and Claude, create a file named `.env` next to `server.py` with your own keys:
 
@@ -81,7 +81,8 @@ Then deploy on [Vercel](https://vercel.com): import this repo and add the same k
 | File | What it does |
 |---|---|
 | `server.py` | The API the web app talks to; filters out other people's private notes |
-| `web/` | The web app (React + Vite): start page, trip page and its six tabs, installable on phones |
+| `web/public/index.html`, `landing.js` | The start page: plain HTML built with the [taste-skill](https://github.com/Leonxlnx/taste-skill) kit in `web/public/assets`; it starts and joins trips through the API |
+| `web/src/`, `web/trip/` | The trip app (React + Vite) at `/trip/`: the trip page and its six tabs, installable on phones |
 | `planner.py` | Proposes destinations, builds the itinerary with a cited reason for every choice, and runs the privacy guard |
 | `memory_store.py` | Mem0 scopes (`user_id`, `run_id`, `agent_id`, `app_id`) with an offline fallback, plus where trips are saved (local file or Supabase) |
 | `llm.py` | Claude / OpenAI wrapper |
