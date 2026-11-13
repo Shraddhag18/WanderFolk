@@ -312,6 +312,8 @@ function Menu({ view, config, act, onClose }: { view: TripView; config: Config |
           <label className="check"><input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} /> Yes, delete it</label>
           <button className="btn danger" disabled={!sure} onClick={remove}>Delete trip</button>
         </details>
+
+        <p className="muted small">What WanderFolk keeps and how to delete it: <a href="/privacy.html">Privacy</a></p>
       </div>
     </div>
   );

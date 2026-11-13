@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" data-type="software" data-radius="round">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy: what WanderFolk saves and how to delete it</title>
+<meta name="description" content="What WanderFolk keeps about you and your trips, who processes it, and how to delete it.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f7f9f8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wdth,wght@85..100,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<style>
+:root {
+  --p-bg: #f7f9f8; --p-surface: #ebf0ee; --p-ink: #06525c; --p-muted: #2f737d;
+  --p-accent: #06525c; --p-accent-ink: #f7f9f8; --p-action: #06525c; --p-action-ink: #f7f9f8;
+  --font-display: "IBM Plex Sans", system-ui, sans-serif;
+  --font-text: "IBM Plex Sans", system-ui, sans-serif;
+  --display-weight: 500; --display-tracking: -0.025em;
+}
+/* a plain reading page: one column, no section screens */
+.doc { max-width: 720px; margin: 0 auto; padding: 48px 24px 96px; }
+.doc h1 { font-size: clamp(32px, 5vw, 48px); margin: 32px 0 8px; }
+.doc h2 { font-size: 24px; margin: 48px 0 12px; }
+.doc p, .doc li { font-size: 17px; line-height: 1.65; color: var(--ink); }
+.doc ul { padding-left: 20px; }
+.doc li { margin-bottom: 8px; }
+.doc .updated { color: var(--muted); font-size: 15px; }
+.doc table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 16px; }
+.doc th, .doc td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.doc th { font-weight: 500; }
+.doc p a:not(.back), .doc li a { text-decoration: underline; text-underline-offset: 3px; }
+.back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; color: var(--ink); font-weight: 500; }
+@media (max-width: 560px) { .doc table, .doc thead, .doc tbody, .doc tr, .doc th, .doc td { display: block; } .doc thead { display: none; } .doc td:first-child { font-weight: 500; border-bottom: 0; padding-bottom: 0; } }
+</style>
+</head>
+<body>
+<main class="doc" id="top">
+  <a class="back" href="/"><span class="mark" data-mark="ring" aria-hidden="true"></span>WanderFolk</a>
+
+  <h1>Privacy</h1>
+  <p class="updated">Last updated 12 November 2026</p>
+
+  <p>WanderFolk is a free group trip planner. This page says what it keeps about you, who helps run it, and how to delete what you added. There are no accounts, no ads and no tracking cookies.</p>
+
+  <h2>What WanderFolk saves</h2>
+  <ul>
+    <li><b>The trip:</b> its name, the start city, the number of days and the names of the people coming, as whoever started the trip typed them.</li>
+    <li><b>What each person adds:</b> places they'd like to go, food and dietary needs, how they like to travel, trip ideas and feedback after the trip. This can include health details, such as an allergy or a wheelchair, if you choose to write them.</li>
+    <li><b>Planning:</b> votes, the packing list, the proposals and the itinerary.</li>
+    <li><b>On your own device only:</b> which person you are in each trip and the last trips you opened, kept in your browser's storage. Clearing your browser data removes them.</li>
+  </ul>
+  <p>Only write what you're happy for the planner to use. Don't add passwords, payment details or ID numbers.</p>
+
+  <h2>Who can see it</h2>
+  <ul>
+    <li><b>Anyone with the trip's link</b> can open the trip, see its notes and add to it. Share the link only with the people coming.</li>
+    <li><b>Private notes</b> are used for planning but never shown to the rest of the group: their text, amounts and the name of who wrote it are removed from everything the group sees.</li>
+    <li>WanderFolk has no public list of trips.</li>
+  </ul>
+
+  <h2>Why it's kept</h2>
+  <p>To plan the trip: to propose places that suit the group, write the itinerary and show the reason behind each choice. Food needs, travel style and feedback are kept for each person so the next trip you plan together starts with them; places and ideas belong to one trip only. Nothing is sold or used for advertising.</p>
+
+  <h2>Services that process it</h2>
+  <table>
+    <thead><tr><th scope="col">Service</th><th scope="col">What it does with your data</th></tr></thead>
+    <tbody>
+      <tr><td>Vercel</td><td>Hosts the website and the app's server.</td></tr>
+      <tr><td>Supabase</td><td>Stores trips, votes, packing lists and itineraries.</td></tr>
+      <tr><td>Mem0</td><td>Stores what each person adds, so the planner can find and remember it.</td></tr>
+      <tr><td>Anthropic (Claude)</td><td>Reads the group's notes, private ones included, to write the proposals and the itinerary.</td></tr>
+      <tr><td>Google</td><td>Shows the map of the chosen place and serves the page's fonts; your browser connects to Google to load them.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>How to delete it</h2>
+  <ul>
+    <li><b>A single note:</b> open the trip, go to <b>Everyone's input</b> or <b>Memory</b>, and tap the bin beside it. Only the person who wrote a private note can delete it.</li>
+    <li><b>A whole trip:</b> open the trip, tap <b>⋯</b>, then <b>Delete this trip</b>. This removes the trip, its places and ideas, the packing list and the plan. Each person's food needs, travel style and feedback stay for their next trip until they delete those notes too.</li>
+    <li><b>Anything else,</b> or if you can't open the trip any more: open an issue at <a href="https://github.com/Shraddhag18/WanderFolk/issues">github.com/Shraddhag18/WanderFolk/issues</a> with the trip's name, without personal details, and ask for a way to send the rest privately.</li>
+  </ul>
+
+  <h2>Changes</h2>
+  <p>If what WanderFolk keeps changes, this page will say so, with a new date at the top.</p>
+
+  <p><a class="back" href="/">← Back to WanderFolk</a></p>
+</main>
+</body>
+</html>
