@@ -35,6 +35,26 @@ class Api(unittest.TestCase):
         self.assertEqual(self.c.post("/api/trips", json={"name": "x", "members": ",".join(map(str, range(13)))}).status_code, 400)
         self.assertEqual(self.c.get("/api/trips/nope").status_code, 404)
 
+    def test_every_trip_gets_a_short_join_code(self):
+        code = self.view()["trip"]["code"]
+        self.assertRegex(code, r"^[A-HJKMNP-Z2-9]{3}-[A-HJKMNP-Z2-9]{3}$")
+        for typed in (code, code.lower(), code.replace("-", ""), f" {code[:3]} {code[4:]} "):
+            r = self.c.get("/api/lookup", params={"link": typed})
+            self.assertEqual(r.json().get("id"), self.id, typed)
+        self.assertEqual(self.c.get("/api/lookup", params={"link": "ZZZ-ZZZ"}).status_code, 404)
+        # an earlier trip can be named by its code too
+        r = self.c.post("/api/trips", json={"name": "Big Sur", "members": "Priya", "earlier": code})
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertNotEqual(r.json()["code"], code)
+        # a trip from before codes existed gets one when it's opened
+        old = server.trips_db.get(server.BUCKET, self.id); old.pop("code"); server.trips_db.save(server.BUCKET, old)
+        fresh = self.view()["trip"]["code"]
+        self.assertNotEqual(fresh, code)
+        self.assertEqual(self.c.get("/api/lookup", params={"link": fresh}).json()["id"], self.id)
+        # deleting the trip retires its code
+        self.c.delete(f"/api/trips/{self.id}")
+        self.assertEqual(self.c.get("/api/lookup", params={"link": fresh}).status_code, 404)
+
     def test_lookup_accepts_code_or_link(self):
         self.assertEqual(self.c.get("/api/lookup", params={"link": self.id}).json()["id"], self.id)
         self.assertEqual(self.c.get("/api/lookup", params={"link": f"https://x.app/?trip={self.id}"}).json()["id"], self.id)

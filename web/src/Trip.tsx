@@ -234,7 +234,8 @@ function Menu({ view, config, act, onClose }: { view: TripView; config: Config |
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: trip.name, text: `Join our trip "${trip.name}" on WanderFolk`, url: link });
+        await navigator.share({ title: trip.name, url: link,
+          text: `Join our trip "${trip.name}" on WanderFolk${trip.code ? `. Open the link, or enter code ${trip.code} at ${location.host}` : ""}` });
         return;
       } catch {
         /* cancelled: fall through to copy */
@@ -245,6 +246,15 @@ function Menu({ view, config, act, onClose }: { view: TripView; config: Config |
       toast("Invite link copied");
     } catch {
       toast("Couldn't copy. Select the link and copy it yourself.", true);
+    }
+  }
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(trip.code ?? "");
+      toast(`Code ${trip.code} copied`);
+    } catch {
+      toast("Couldn't copy. Read the code out instead.", true);
     }
   }
 
@@ -271,7 +281,14 @@ function Menu({ view, config, act, onClose }: { view: TripView; config: Config |
 
         <section>
           <h3>Invite the group</h3>
-          <p className="muted small">Anyone with this link can open the trip and add their input. Share it only with the group.</p>
+          {trip.code && (
+            <div className="join-code">
+              <span className="join-code-label">Trip code</span>
+              <span className="join-code-value" aria-label={`Trip code ${trip.code.split("").join(" ")}`}>{trip.code}</span>
+              <button className="btn small" onClick={copyCode}>Copy code</button>
+            </div>
+          )}
+          <p className="muted small">Friends can type this code on {location.host} under <b>Join a trip</b>, or open the link. Anyone with either can add their input, so share them only with the group.</p>
           <div className="invite">{link}</div>
           <button className="btn primary" onClick={share}>Share invite link</button>
         </section>

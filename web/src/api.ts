@@ -40,6 +40,7 @@ export type PackItem = { id: string; text: string; by: string; done: boolean };
 
 export type Trip = {
   id: string;
+  code?: string; // short join code, like K7P-4QM
   name: string;
   origin: string;
   days: number;

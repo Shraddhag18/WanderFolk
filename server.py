@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import re
+import secrets
 import threading
 import time
 import uuid
@@ -31,6 +32,8 @@ import planner  # noqa: E402
 from memory_store import APP_ID, make_store, make_trip_store, traveler_id  # noqa: E402
 
 BUCKET = "trips"
+CODES = "codes"  # join code -> trip id, kept as small rows next to the trips
+CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no 0/O, 1/I/L: easy to read out loud and type
 MAX_MEMBERS = 12
 MAX_SUGGESTS, MAX_PLANS = 6, 15                     # AI runs per trip, so one trip can't run up the bill
 CREATE_CODE = os.getenv("CREATE_CODE", "").strip()  # if set, starting a trip needs this code; joining never does
@@ -64,12 +67,40 @@ def parse_names(raw: str) -> list[str]:
     return names
 
 
+def clean_code(text: str) -> str | None:
+    """'k7p-4qm', 'K7P 4QM' and 'K7P4QM' are all the same code. None if it can't be one."""
+    code = re.sub(r"[\s-]", "", text or "").upper()
+    return code if len(code) == 6 and all(c in CODE_ALPHABET for c in code) else None
+
+
+def show_code(code: str) -> str:
+    return f"{code[:3]}-{code[3:]}"
+
+
+def give_code(trip: dict) -> str:
+    """Every trip gets one short join code. Older trips get theirs the first time they're opened."""
+    if not trip.get("code"):
+        for _ in range(10):
+            code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(6))
+            if not trips_db.get(CODES, code):
+                break
+        trips_db.save(CODES, {"id": code, "trip": trip["id"]})
+        trip["code"] = code
+        save(trip)
+    return trip["code"]
+
+
 def find_trip(text: str) -> dict | None:
-    """Accepts a trip code or a whole invite link."""
+    """Accepts a join code, a trip id, or a whole invite link."""
     text = (text or "").strip()
+    if not text:
+        return None
+    code = clean_code(text)
+    if code:
+        row = trips_db.get(CODES, code)
+        return trips_db.get(BUCKET, row["trip"]) if row else None
     link = re.search(r"[?&]trip=([^&\s#]+)", text)
-    trip_id = unquote(link.group(1)) if link else text
-    return trips_db.get(BUCKET, trip_id) if trip_id else None
+    return trips_db.get(BUCKET, unquote(link.group(1)) if link else text)
 
 
 def load(trip_id: str) -> dict:
@@ -153,6 +184,8 @@ def trip_view(trip: dict, me: str | None) -> dict:
     memories = trip_memories(trip)
     notes = [m for m in memories if m.get("type") in CATEGORIES]
     public = {k: v for k, v in trip.items() if k != "crew"}
+    if trip.get("code"):
+        public["code"] = show_code(trip["code"])
     return {
         "trip": public,
         "memories": [note_view(m, trip, me) for m in memories],
@@ -244,7 +277,7 @@ def config():
 def lookup(link: str):
     trip = find_trip(link)
     if not trip:
-        raise HTTPException(404, "That doesn't match a trip. Check it with whoever sent it.")
+        raise HTTPException(404, "That code or link doesn't match a trip. Check it with whoever sent it.")
     return {"id": trip["id"], "name": trip["name"]}
 
 
@@ -261,7 +294,7 @@ def create_trip(body: NewTrip):
     if len(people) > MAX_MEMBERS:
         raise HTTPException(400, f"That's {len(people)} people. WanderFolk handles up to {MAX_MEMBERS} for now.")
     if body.earlier.strip() and not earlier:
-        raise HTTPException(400, "That earlier trip link doesn't match a trip. Fix it or leave the box empty.")
+        raise HTTPException(400, "That earlier trip's code or link doesn't match a trip. Fix it or leave the box empty.")
     slug = re.sub(r"[^a-z0-9]+", "-", body.name.lower()).strip("-")[:40] or "trip"
     trip = {"id": f"{slug}-{uuid.uuid4().hex[:10]}", "name": body.name.strip(),
             # crew: the group of friends. Trips that share a crew share what WanderFolk knows about each person.
@@ -270,12 +303,13 @@ def create_trip(body: NewTrip):
             "created_at": datetime.now().isoformat(timespec="seconds"),
             "packing": [], "proposals": [], "votes": {}, "chosen": None, "plan": None}
     save(trip)
-    return {"id": trip["id"]}
+    return {"id": trip["id"], "code": show_code(give_code(trip))}
 
 
 @app.get("/api/trips/{trip_id}")
 def get_trip(trip_id: str, me: str | None = None):
     trip = load(trip_id)
+    give_code(trip)
     return trip_view(trip, me if me in trip["members"] else None)
 
 
@@ -300,6 +334,8 @@ def delete_trip(trip_id: str):
         if m.get("trip_id") == trip["id"] and m.get("type") not in REMEMBERED:
             store.delete(m["id"])
     trips_db.delete(BUCKET, trip["id"])
+    if trip.get("code"):
+        trips_db.delete(CODES, trip["code"])
     _forget_cache(trip)
     return {"ok": True}
 

@@ -218,7 +218,7 @@ join.addEventListener('submit', async (e) => {
     const { id } = await api(`/lookup?link=${encodeURIComponent(input.value.trim())}`);
     location.href = tripUrl(id);
   } catch (err) {
-    const msg = err.status === 404 ? "That link doesn't match a trip. Check it with whoever sent it." : err.message;
+    const msg = err.status === 404 ? "That code or link doesn't match a trip. Check it with whoever sent it." : err.message;
     showError(input, msg);
     status.textContent = msg;
   } finally {

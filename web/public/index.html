@@ -53,7 +53,7 @@
       <p class="hero__lead">Friends add where they'd go, what they eat and how they travel. WanderFolk suggests places that suit all of you, then plans each day.</p>
       <div class="hero__actions">
         <a class="btn btn--glow btn--big" href="#start">Start a trip</a>
-        <a class="btn btn--ghost" href="#join">Join with a link</a>
+        <a class="btn btn--ghost" href="#join">Join with a code</a>
       </div>
       <p class="hero__fine">Free, no account. Up to 12 people, 1 to 7 days.</p>
     </div>
@@ -207,7 +207,7 @@
         <details class="more">
           <summary>Travelled together before?</summary>
           <div class="field">
-            <label for="f-earlier">Link to your earlier trip</label>
+            <label for="f-earlier">Code or link of your earlier trip</label>
             <input id="f-earlier" name="earlier" type="text" autocomplete="off" aria-describedby="f-earlier-hint f-earlier-err">
             <p class="hint" id="f-earlier-hint">Carries over everyone's food needs, travel style and feedback.</p>
             <p class="err" id="f-earlier-err" hidden></p>
@@ -227,14 +227,16 @@
       <h2 class="side-h">Join a trip</h2>
       <form id="join-form" action="/trip/" method="get" novalidate>
         <div class="field">
-          <label for="f-link">Trip link or code</label>
-          <input id="f-link" name="trip" type="text" autocomplete="off" required aria-describedby="f-link-err">
-          <p class="err" id="f-link-err" hidden>Paste the link a friend sent you.</p>
+          <label for="f-link">Trip code or link</label>
+          <input id="f-link" name="trip" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required
+                 placeholder="e.g. K7P-4QM" aria-describedby="f-link-hint f-link-err">
+          <p class="hint" id="f-link-hint">The 6-character code from whoever started the trip, or the link they sent.</p>
+          <p class="err" id="f-link-err" hidden>Enter the trip code or paste the link a friend sent you.</p>
         </div>
         <button class="btn btn--line btn--full" type="submit">Join the trip</button>
         <p class="status" role="status" data-form-status></p>
       </form>
-      <p class="side-note">Anyone with a trip's link can open it, so share it only with the group.</p>
+      <p class="side-note">Anyone with a trip's code or link can open it, so share them only with the group.</p>
       <div id="recent-box" hidden>
         <h2 class="side-h">Your trips on this device</h2>
         <ul class="recent" id="recent"></ul>
