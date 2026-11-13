@@ -74,7 +74,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-service-role-key
 ```
 
-Then deploy on [Vercel](https://vercel.com): import this repo and add the same keys under **Environment Variables**. `vercel.json` builds the web app into `public/` and runs `server.py` as the API.
+Then deploy on [Vercel](https://vercel.com): import this repo and add the same keys under **Environment Variables**. `vercel.json` sets up two Vercel services in one project: `api` (`server.py`, FastAPI) answers `/api/...`, and `web` (the Vite build of `web/`) serves everything else.
 
 ## Files
 

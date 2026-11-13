@@ -9,3 +9,4 @@ venv/
 /public/
 web/node_modules/
 .taste-skill/
+web/dist/
