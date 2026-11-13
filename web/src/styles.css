@@ -190,6 +190,15 @@ label.check input { width: 20px; height: 20px; min-height: 0; margin: 2px 0 0; a
 .note { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 6px 6px 6px 12px; font-size: 0.92rem; min-height: 44px; }
 .note.lock { background: var(--lock-bg); border-color: var(--lock-border); }
 .note-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.note.editing { padding: 6px; }
+.note-edit { display: flex; gap: 6px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.note-edit input { flex: 1 1 180px; min-width: 0; }
+.icon-btn.small:disabled { opacity: 0.35; cursor: progress; }
+.privacy-toggle { flex: none; min-height: 36px; padding: 0 12px; border-radius: 999px; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); white-space: nowrap; }
+.note.lock .privacy-toggle { background: var(--lock-border); border-color: transparent; }
+.privacy-toggle:hover { border-color: var(--accent); }
+.privacy-toggle:disabled { opacity: 0.5; cursor: progress; }
 .mine { margin-top: 14px; }
 details summary { cursor: pointer; font-weight: 600; padding: 6px 0; display: flex; align-items: center; gap: 8px; }
 .person-mem summary { padding: 0; }

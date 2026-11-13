@@ -19,6 +19,7 @@ export type Memory = {
   mine: boolean;
   from_trip: string | null;
   can_delete: boolean;
+  can_edit: boolean;
 };
 
 export type Proposal = {

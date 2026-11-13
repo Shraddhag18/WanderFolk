@@ -120,6 +120,14 @@ class LocalStore:
         with _lock:
             self._write([i for i in self._read() if i.get("id") != memory_id])
 
+    def update(self, memory_id: str, text: str, metadata: dict) -> None:
+        with _lock:
+            items = self._read()
+            for i in items:
+                if i.get("id") == memory_id:
+                    i["memory"], i["metadata"] = text, metadata
+            self._write(items)
+
     def clear_group(self, travelers: list[str]) -> None:
         with _lock:
             self._write([i for i in self._read() if i.get("user_id") not in travelers])
@@ -179,6 +187,10 @@ class Mem0Store:
 
     def delete(self, memory_id: str) -> None:
         self.client.delete(memory_id=memory_id)
+
+    def update(self, memory_id: str, text: str, metadata: dict) -> None:
+        """Sends the whole metadata, so changing one field (like private) never drops the others."""
+        self.client.update(memory_id, text=text, metadata=metadata)
 
     def clear_group(self, travelers: list[str]) -> None:
         for t in travelers:

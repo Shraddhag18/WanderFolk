@@ -19,7 +19,35 @@ function NeedMe({ me, children }: { me: string | null; children: string }) {
   return <div className="notice">Pick your name first (tap <b>Not you?</b> or reload the page) to {children}.</div>;
 }
 
-function NoteRow({ m, onDelete }: { m: Memory; onDelete?: () => void }) {
+type NoteEdit = { text?: string; private?: boolean };
+
+function NoteRow({ m, onDelete, onEdit }: { m: Memory; onDelete?: () => void; onEdit?: (change: NoteEdit, done: string) => Promise<boolean> }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(m.text ?? "");
+  const [busy, setBusy] = useState(false);
+  const canEdit = !!onEdit && m.can_edit;
+
+  async function change(c: NoteEdit, done: string) {
+    if (!onEdit) return;
+    setBusy(true);
+    const ok = await onEdit(c, done);
+    setBusy(false);
+    if (ok) setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <li className={`note editing${m.private ? " lock" : ""}`}>
+        <form className="note-edit" onSubmit={(e) => { e.preventDefault(); if (draft.trim()) change({ text: draft.trim() }, "Note updated"); }}>
+          <input value={draft} maxLength={1000} autoFocus aria-label="Edit this note"
+            onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") setEditing(false); }} />
+          <button className="btn primary small" disabled={busy || !draft.trim()}>{busy ? "Saving…" : "Save"}</button>
+          <button type="button" className="btn small" onClick={() => { setDraft(m.text ?? ""); setEditing(false); }}>Cancel</button>
+        </form>
+      </li>
+    );
+  }
+
   return (
     <li className={`note${m.private ? " lock" : ""}`}>
       <span className="note-icon" aria-hidden>{KIND_ICON[m.kind] ?? "💜"}</span>
@@ -27,7 +55,19 @@ function NoteRow({ m, onDelete }: { m: Memory; onDelete?: () => void }) {
         {noteText(m)}
         {m.from_trip && <span className="faint"> · remembered from {m.from_trip}</span>}
       </span>
-      {onDelete && m.can_delete && <button className="icon-btn small" onClick={onDelete} aria-label="Delete this note">🗑️</button>}
+      {canEdit && (
+        <>
+          <button className="privacy-toggle" disabled={busy}
+            onClick={() => change({ private: !m.private }, m.private ? "The group can see this note now" : "Note is private now")}
+            aria-label={m.private ? "Private. Show this note to the group" : "Shared. Make this note private"}
+            title={m.private ? "Tap to show it to the group" : "Tap to make it private"}>
+            {m.private ? "🔒 Private" : "👀 Shared"}
+          </button>
+          <button className="icon-btn small" disabled={busy} onClick={() => { setDraft(m.text ?? ""); setEditing(true); }}
+            aria-label="Edit this note" title="Edit">✏️</button>
+        </>
+      )}
+      {onDelete && m.can_delete && <button className="icon-btn small" onClick={onDelete} aria-label="Delete this note" title="Delete">🗑️</button>}
     </li>
   );
 }
@@ -44,6 +84,8 @@ export function InputTab({ view, me, act, config }: Shared) {
   const [saving, setSaving] = useState(false);
   const mine = memories.filter((m) => m.traveler === me);
   const del = (id: string) => act(() => api(`${tripPath(trip.id)}/memories/${id}`, { method: "DELETE", params: { me: me ?? "" } }), "Deleted");
+  const edit = (id: string) => (change: NoteEdit, done: string) =>
+    act(() => api(`${tripPath(trip.id)}/memories/${id}`, { method: "PATCH", body: { me, ...change } }), done);
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -82,9 +124,10 @@ export function InputTab({ view, me, act, config }: Shared) {
             <button className="btn primary" disabled={saving}>{saving ? "Saving…" : `Save for ${me}`}</button>
           </form>
           {mine.length > 0 && (
-            <details className="mine">
-              <summary>What WanderFolk knows about you · {mine.length}</summary>
-              <ul className="notes">{mine.map((m) => <NoteRow key={m.id} m={m} onDelete={() => del(m.id)} />)}</ul>
+            <details className="mine" open>
+              <summary>Your notes · {mine.length}</summary>
+              <p className="faint small">Tap 🔒 Private or 👀 Shared to switch who sees a note. ✏️ edits it, 🗑️ deletes it.</p>
+              <ul className="notes">{mine.map((m) => <NoteRow key={m.id} m={m} onDelete={() => del(m.id)} onEdit={edit(m.id)} />)}</ul>
             </details>
           )}
         </section>
@@ -421,7 +464,8 @@ export function MemoryTab({ view, me, act, config }: Shared) {
             {theirs.length ? (
               <ul className="notes">
                 {theirs.map((m) => <NoteRow key={m.id} m={m}
-                  onDelete={() => act(() => api(`${tripPath(trip.id)}/memories/${m.id}`, { method: "DELETE", params: { me: me ?? "" } }), "Memory deleted")} />)}
+                  onDelete={() => act(() => api(`${tripPath(trip.id)}/memories/${m.id}`, { method: "DELETE", params: { me: me ?? "" } }), "Memory deleted")}
+                  onEdit={(change, done) => act(() => api(`${tripPath(trip.id)}/memories/${m.id}`, { method: "PATCH", body: { me, ...change } }), done)} />)}
               </ul>
             ) : <p className="faint small">Nothing saved yet.</p>}
           </details>

@@ -56,6 +56,21 @@ class Api(unittest.TestCase):
         self.assertEqual(self.c.delete(f"/api/trips/{self.id}/memories/{mid}", params={"me": "Priya"}).status_code, 403)
         self.assertEqual(self.c.delete(f"/api/trips/{self.id}/memories/{mid}", params={"me": "Maya"}).status_code, 200)
 
+    def test_owner_can_edit_a_note_and_change_its_privacy(self):
+        self.c.post(f"/api/trips/{self.id}/notes", json={"me": "Maya", "private": True, "answers": {"travel": "Budget $100 a day"}})
+        mid = next(m["id"] for m in self.view("Maya")["memories"] if m["traveler"] == "Maya")
+        url = f"/api/trips/{self.id}/memories/{mid}"
+        self.assertEqual(self.c.patch(url, json={"me": "Priya", "private": False}).status_code, 403)   # not hers
+        self.assertEqual(self.c.patch(url, json={"me": "Maya", "text": "  "}).status_code, 400)
+        r = self.c.patch(url, json={"me": "Maya", "text": "Budget $150 a day"})
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertNotIn("$150", self.c.get(f"/api/trips/{self.id}", params={"me": "Priya"}).text)  # edit kept it private
+        self.assertEqual(self.c.patch(url, json={"me": "Maya", "private": False}).status_code, 200)
+        note = next(m for m in self.view("Priya")["memories"] if m["id"] == mid)
+        self.assertEqual((note["text"], note["private"], note["kind"]), ("Budget $150 a day", False, "travel"))
+        self.assertFalse(note["can_edit"])
+        self.assertTrue(next(m for m in self.view("Maya")["memories"] if m["id"] == mid)["can_edit"])
+
     def test_only_members_can_add(self):
         r = self.c.post(f"/api/trips/{self.id}/notes", json={"me": "Stranger", "answers": {"diet": "x"}})
         self.assertEqual(r.status_code, 400)

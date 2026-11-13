@@ -145,6 +145,7 @@ def note_view(m: dict, trip: dict, me: str | None) -> dict:
         "text": None if hidden else m["memory"], "mine": m.get("traveler") == me,
         "from_trip": m.get("trip_name") if m.get("trip_id") != trip["id"] else None,
         "can_delete": not hidden and me is not None,
+        "can_edit": m.get("traveler") == me,
     }
 
 
@@ -192,6 +193,12 @@ class Notes(BaseModel):
     me: str
     answers: dict[str, str]
     private: bool = False
+
+
+class EditNote(BaseModel):
+    me: str
+    text: str | None = Field(None, max_length=1000)
+    private: bool | None = None
 
 
 class Text(BaseModel):
@@ -329,6 +336,31 @@ def delete_memory(trip_id: str, memory_id: str, me: str):
         raise HTTPException(403, "Only its owner can delete a private note.")
     store.delete(memory_id)
     _forget_cache(trip)
+    return {"ok": True}
+
+
+@app.patch("/api/trips/{trip_id}/memories/{memory_id}")
+def edit_memory(trip_id: str, memory_id: str, body: EditNote):
+    """Change your own note's words, or make it private / visible to the group."""
+    trip = load(trip_id)
+    me = check_member(trip, body.me)
+    m = next((m for m in trip_memories(trip) if m["id"] == memory_id), None)
+    if not m:
+        raise HTTPException(404, "That note is gone. Reload to see the latest.")
+    if m.get("traveler") != me:
+        raise HTTPException(403, "Only the person who wrote a note can change it.")
+    text = m["memory"] if body.text is None else body.text.strip()
+    if not text:
+        raise HTTPException(400, "A note can't be empty. Delete it instead.")
+    meta = {"type": m.get("type"), "traveler": m["traveler"],
+            "private": m.get("private") if body.private is None else body.private,
+            "group": m.get("group") or crew_of(trip), "trip_id": m.get("trip_id"), "trip_name": m.get("trip_name", "")}
+    try:
+        store.update(memory_id, text[:1000], meta)
+    except Exception as e:
+        raise HTTPException(502, f"Couldn't save that change ({e.__class__.__name__}). Try again in a moment.")
+    finally:
+        _forget_cache(trip)
     return {"ok": True}
 
 
