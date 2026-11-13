@@ -37,6 +37,13 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _flag(value) -> bool:
+    """Mem0 hands metadata back as text ("False"), so bool() alone would read every note as private."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes")
+    return bool(value)
+
+
 def _normalize(item: dict) -> dict:
     meta = item.get("metadata") or {}
     return {
@@ -48,7 +55,7 @@ def _normalize(item: dict) -> dict:
         "traveler": meta.get("traveler") or item.get("user_id"),
         "trip_id": meta.get("trip_id") or item.get("run_id"),
         "trip_name": meta.get("trip_name", ""),
-        "private": bool(meta.get("private", False)),
+        "private": _flag(meta.get("private", False)),
         "group": meta.get("group", ""),
         "created_at": item.get("created_at", ""),
     }
@@ -151,9 +158,10 @@ class Mem0Store:
             return [_normalize(i) for i in _results(self.client.get_all(user_id=user_id))]
 
     def for_travelers(self, user_ids: list[str]) -> list[dict]:
-        """One group's people in one request, so a hosted app never reads other groups' memories."""
+        """One group's people in one request, so a hosted app never reads other groups' memories.
+        Mem0's get_all ignores an OR of user_ids (it returns nothing), so this asks with "in"."""
         try:
-            return self._get_all({"OR": [{"user_id": u} for u in user_ids]})
+            return self._get_all({"user_id": {"in": list(user_ids)}})
         except Exception:
             return [m for u in user_ids for m in self.for_traveler(u)]
 
@@ -164,7 +172,7 @@ class Mem0Store:
         return self._get_all({"run_id": run_id})
 
     def search(self, query: str, limit: int = 6, user_ids: list[str] | None = None) -> list[dict]:
-        scope = {"OR": [{"user_id": u} for u in user_ids]} if user_ids else \
+        scope = {"user_id": {"in": list(user_ids)}} if user_ids else \
             {"AND": [{"agent_id": AGENT_ID}, {"app_id": APP_ID}]}
         resp = self.client.search(query, filters=scope, top_k=limit)
         return [_normalize(i) for i in _results(resp)]

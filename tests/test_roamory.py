@@ -160,5 +160,32 @@ class SupabaseTrips(unittest.TestCase):
             self.assertEqual(store.base, "https://x.supabase.co/rest/v1/trips")
 
 
+class Mem0Shapes(unittest.TestCase):
+    """What the Mem0 platform really sends and accepts (checked against the live API on 2026-11-12)."""
+
+    def test_private_flag_comes_back_as_text(self):
+        from memory_store import _normalize
+        note = lambda v: _normalize({"id": "1", "memory": "x", "metadata": {"private": v, "traveler": "A"}})
+        self.assertFalse(note("False")["private"])
+        self.assertFalse(note(False)["private"])
+        self.assertTrue(note("True")["private"])
+        self.assertTrue(note(True)["private"])
+
+    def test_group_read_uses_an_in_filter(self):
+        from memory_store import Mem0Store
+        seen = []
+
+        class Client:
+            def get_all(self, filters=None, **kw):
+                seen.append(filters)
+                return {"results": [{"id": "1", "memory": "Vegetarian", "metadata": {"traveler": "A", "private": "False"}}]}
+
+        store = object.__new__(Mem0Store)
+        store.client = Client()
+        got = store.for_travelers(["g--a", "g--b"])
+        self.assertEqual(seen, [{"user_id": {"in": ["g--a", "g--b"]}}])
+        self.assertEqual([(m["memory"], m["private"]) for m in got], [("Vegetarian", False)])
+
+
 if __name__ == "__main__":
     unittest.main()
