@@ -1,495 +1,257 @@
 <!doctype html>
-<html lang="en" data-type="software" data-radius="round" data-ground="sage" data-buttons="arrow" data-motion>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Invite links from the first version (/?trip=<id>) open the trip app straight away. -->
 <script>if (new URLSearchParams(location.search).has('trip')) location.replace('/trip/' + location.search + location.hash)</script>
-<title>WanderFolk: a group trip planner for friends</title>
-<meta name="description" content="Everyone in the group adds their notes, WanderFolk proposes places that fit all of you, and the trip you vote for comes with a map and a day-by-day plan.">
+<title>WanderFolk: group trips, planned around everyone</title>
+<meta name="description" content="Friends add where they'd go, what they eat and how they travel. WanderFolk suggests places that suit all of you, then plans each day.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="WanderFolk: a group trip planner for friends">
-<meta property="og:description" content="Proposals that fit the whole group, votes, a map and a day-by-day plan with the reason behind every stop.">
+<meta property="og:title" content="WanderFolk: group trips, planned around everyone">
+<meta property="og:description" content="Suggestions that suit the whole group, a vote, and a day-by-day plan with the reason behind every stop.">
 <meta property="og:image" content="share.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#f7f9f8">
-<!-- <link rel="canonical" href="https://[the app's domain]/"> once the domain is known -->
-<meta name="site-kind" content="software">
-<meta name="page-type" content="software">
+<meta name="theme-color" content="#2B3A67">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wdth,wght@85..100,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/system.css">
-<link rel="stylesheet" href="assets/ui/cards.css">
-<link rel="stylesheet" href="assets/motion/motion.css">
-<link rel="stylesheet" href="assets/backgrounds/backgrounds.css">
-<link rel="stylesheet" href="assets/layout/layout.css">
-<link rel="stylesheet" href="assets/icons/icon.css">
-<style>
-:root {
-  --p-bg: #f7f9f8; --p-surface: #ebf0ee; --p-ink: #06525c; --p-muted: #2f737d;
-  --p-accent: #06525c; --p-accent-ink: #f7f9f8; --p-action: #06525c; --p-action-ink: #f7f9f8;
-  --p-inv-bg: #06525c; --p-inv-surface: #205d66; --p-inv-ink: #f7f9f8; --p-inv-muted: #c1d0d2;
-  --p-inv-accent: #f7f9f8; --p-inv-accent-ink: #06525c; --p-inv-action: #f7f9f8; --p-inv-action-ink: #06525c;
-  --font-display: "IBM Plex Sans", system-ui, sans-serif;
-  --font-text: "IBM Plex Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --display-weight: 500;
-  --display-tracking: -0.025em;
-  --display-tracking-xl: -0.035em;
-  --ly-scale: 0.98;
-}
-</style>
-<link rel="stylesheet" href="assets/ui/base.css">
-<link rel="stylesheet" href="assets/ui/window/fragment.css">
-<link rel="stylesheet" href="assets/ui/doc/fragment.css">
-<link rel="stylesheet" href="assets/ui/toggles/fragment.css">
-<link rel="stylesheet" href="assets/ui/notify/fragment.css">
-<link rel="stylesheet" href="assets/ui/checklist/fragment.css">
-<link rel="stylesheet" href="assets/ui/chat/fragment.css">
-<link rel="stylesheet" href="assets/diagrams/diagram.css">
-<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
-<script src="assets/backgrounds/backgrounds.js"></script>
-<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
-<link rel="modulepreload" href="assets/moments/moments.js">
-<link rel="modulepreload" href="assets/moments/lib.js">
-<link rel="modulepreload" href="assets/moments/counter-rolls/moment.js">
-<!-- page CSS: only what sits inside a visual, and one --p-h per card group -->
-<style>
-  /* the hero window: one trip being planned, drawn as the app's own screen */
-  .d-win { background: #fff; color: #16302f; border-radius: 12px; overflow: hidden; font: 400 14px/1.4 var(--font-text); text-align: left;
-           box-shadow: 0 0 0 1px rgb(6 82 92 / .1), 0 24px 60px -28px rgb(6 40 44 / .5); }
-  .d-win__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgb(6 82 92 / .1); font-size: 13px; color: #4f6466; }
-  .d-win__bar b { color: #16302f; font-weight: 500; } .d-win__bar .sp { flex: 1; }
-  .d-win__dots { display: flex; gap: 6px; } .d-win__dots i { width: 10px; height: 10px; border-radius: 50%; background: #d6dfdd; }
-  .d-win__body { display: grid; grid-template-columns: 250px 1fr; min-height: 420px; }
-  .people { border-right: 1px solid rgb(6 82 92 / .1); padding: 10px; display: grid; align-content: start; gap: 2px; }
-  .people .t { display: grid; grid-template-columns: 30px 1fr auto; gap: 1px 10px; padding: 9px 8px; border-radius: 9px; font-size: 13px; }
-  .people .t.is-on { background: #eef3f2; }
-  .people .t i { grid-row: 1 / span 2; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 500 13px/1 var(--font-text); font-style: normal; color: #16302f; }
-  .people .t b { font-weight: 500; color: #16302f; } .people .t time { color: #5c7173; font-size: 13px; }
-  .people .t span { grid-column: 2 / -1; color: #4f6466; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .convo { display: grid; min-width: 0; align-content: start; }
-  .d-chat { display: grid; gap: 8px; align-content: start; padding: 14px 18px; font-size: 14px; }
-  .d-msg { max-width: 82%; padding: 10px 14px; border-radius: 16px; line-height: 1.45; }
-  .d-msg--me { justify-self: end; background: #06525c; color: #f7f9f8; border-bottom-right-radius: 6px; }
-  .d-msg--bot { background: #eef3f2; color: #16302f; border-bottom-left-radius: 6px; }
-  .d-msg small { display: inline; margin-left: 8px; font-size: 13px; opacity: .7; white-space: nowrap; }
-  .d-tool { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4f6466; }
-  .d-tool::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; }
-  .acts { display: flex; gap: 8px; } .acts span { height: 30px; padding: 0 12px; border-radius: 99px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 500; background: #06525c; color: #f7f9f8; }
-  .acts span + span { background: #eef3f2; color: #16302f; }
-  @media (max-width: 639px) {
-    .d-win__body { grid-template-columns: 1fr; } .people { display: none; }
-    .d-chat { font-size: 13px; padding: 12px 14px; } .d-tool, .d-msg small { display: none; }
-    .d-win__bar .sp ~ span { display: none; }
-  }
-
-  /* the planner window: proposals beside the open plan (sections-library, app-frame) */
-  .app.ui { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
-  .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
-  .app > .app__pane + .app__pane { border-left: 1px solid var(--u-line); }
-  .app > .app__pane > .ui-panel { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
-  .app > .app__pane > .ui-doc { width: 100%; max-width: 680px; padding: var(--s-5) 248px var(--s-5) var(--s-5); }
-  .app > .app__pane > .ui-doc > .ui-doc__note { top: var(--s-5); right: var(--s-5); }
-  @media (max-width: 639px) { .app > .app__pane > .ui-doc { padding-right: var(--s-5); } .app > .app__pane > .ui-doc > .ui-doc__note { display: none; } }
-  .app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
-  @media (min-width: 1024px) and (max-width: 1279px) { .app.ui { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
-  @media (max-width: 1023px) {
-    .app.ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-    .app > .app__pane--list { max-height: 252px; }
-    .app > .app__pane--list::after { display: none; }
-    .app .ui-win__side { display: none; }
-    .app .ui-win__body { grid-template-columns: minmax(0, 1fr); }
-    .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--u-line); }
-  }
-  @media (max-width: 639px) {
-    .app.ui { grid-template-rows: minmax(0, 1fr); }
-    .app > .app__pane--list { display: none; }
-    .app > .app__pane + .app__pane { border-top: 0; }
-  }
-
-  #how .panel { --p-h: 300px; }
-  #memory .panel { --p-h: 320px; }
-  @media (max-width: 639px) { #how .panel { --p-h: 200px; } #memory .panel { --p-h: 220px; } }
-  @media (min-width: 640px) and (max-width: 1023px) { #how .panel { --p-h: 240px; } #memory .panel { --p-h: 420px; } }
-
-  /* the counter row closing the privacy section */
-  #privacy .figures { margin-top: var(--s-8); }
-  /* the three steps stay side by side from 1024 (each panel's fragment narrows to fit), and take two screens on a tablet */
-  @media (min-width: 1024px) and (max-width: 1279px) { #how .grid > .card.span-4 { grid-column: span 4; } }
-  @media (min-width: 640px) and (max-width: 1023px) { #how { --h: 2; } }
-  /* text people read stays in the ink (7:1): the hero's lead and the card lines */
-  .hero--centred .hero__lead { color: var(--ink); }
-  .card { --c-text: var(--ink); }
-  /* the name across the close: room for its cap height at every width */
-  .close__word { line-height: 1; font-size: clamp(64px, 16.5vw, 240px); }
-  /* the name across the close: hand-set on a phone so the ten letters fit the 342 column */
-  @media (max-width: 639px) { .close__word { font-size: 16.5vw; } }
-  /* the split's diagram fills its frame */
-  #privacy .frame--split > .dg { position: absolute; inset: 0; }
-
-  /* the start forms: two columns of the grid, the join box and this device's trips on the right */
-  .recent { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; }
-  .recent a { display: flex; justify-content: space-between; align-items: center; min-height: 44px; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink); }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css">
 </head>
 <body>
-<!-- type: software (site-kind software, page type software)
-     deal: hero centred, nav nav-mega, close close-word, footer footer-columns, rhythm space, buttons arrow, mark ring,
-           palette teal-on-paper, type plex, radius round, lit ground sage
-     effect: silk-folds in the hero window
-     moments: counter-rolls (the figures row closing #privacy); marquee-row dealt but left out: its only free sections neighbour the effect or the counter -->
+<a class="skip" href="#main">Skip to content</a>
 
-<header class="nav">
-  <div class="wrap nav__bar">
-    <a class="skip-link" href="#top">Skip to content</a>
-    <a class="nav__logo" href="#top"><span class="mark" data-mark="ring" aria-hidden="true"></span>WanderFolk</a>
-    <nav class="nav__links" aria-label="Main">
-      <div class="nav__item">
-        <a class="nav__link" href="#planner">Planner <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-        <div class="nav__menu">
-          <div class="wrap grid">
-            <div class="menu-col span-3">
-              <p class="t-label">Before the trip</p>
-              <a href="#how">Everyone's notes<span>Places, food, travel style</span></a>
-              <a href="#planner">Proposals<span>Places that fit the group</span></a>
-              <a href="#planner">Votes<span>Everyone picks, one place wins</span></a>
-            </div>
-            <div class="menu-col span-3">
-              <p class="t-label">On the way</p>
-              <a href="#planner">Day-by-day plan<span>With the reason for each stop</span></a>
-              <a href="#how">Packing list<span>Shared, ticked off as you pack</span></a>
-            </div>
-            <a class="menu-card span-3 start-10" href="#privacy">
-              <div class="panel"><div class="stage stage--fade-br"><div class="at-corner" style="--ax:24px;--ay:24px">
-                <div class="ui ui-notify" data-ui="notify">
-                  <ul class="ui-notify__list">
-                    <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Private note saved<time>now</time></span><span class="ui-note__body">Only the planner reads it</span></span></li>
-                  </ul>
-                </div>
-              </div></div></div>
-              <span class="t-card">Private notes</span>
-              <span class="t-small muted">Planned around, never shown</span>
-            </a>
-          </div>
-        </div>
-      </div>
-      <div class="nav__item"><a class="nav__link" href="#how">Steps</a></div>
-      <div class="nav__item"><a class="nav__link" href="#privacy">Privacy</a></div>
-      <div class="nav__item"><a class="nav__link" href="#memory">Memory</a></div>
-    </nav>
-    <div class="nav__actions">
-      <a class="btn btn--primary" href="#start">Start a trip</a>
-    </div>
-    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
-      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    </button>
-  </div>
+<header class="bar" id="bar">
+  <a class="brand" href="#top" aria-label="WanderFolk, back to top">
+    <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M2 27 12 9l5 8 4-5 9 15Z" fill="currentColor"/><path d="M12 9l3.2 5.2-1.7-.9-1.6 1.6-1.4-1.3Z" fill="#fff"/><circle cx="24" cy="7" r="3" fill="var(--sun)"/></svg>
+    WanderFolk
+  </a>
+  <nav class="bar__links" aria-label="Main">
+    <a href="#climb">How it works</a>
+    <a href="#try">Try it</a>
+    <a href="#join">Join a trip</a>
+  </nav>
+  <a class="btn btn--glow bar__cta" href="#start">Start a trip</a>
 </header>
 
-<main id="top">
-  <section class="hero hero--centred" data-enter aria-labelledby="hero-h">
-    <div class="wrap"><div class="hero-text">
-      <div class="hero__c">
-        <a class="pill" href="#how"><span>For trips of 1 to 7 days</span><span class="muted">See the 3 steps</span></a>
-        <h1 id="hero-h">Group trip planner for friends</h1>
-        <p class="hero__lead">Everyone adds where they'd go, what they eat and how they travel. WanderFolk proposes places that suit up to 12 people, then plans each day.</p>
-        <div class="btn-row"><a class="btn btn--primary" href="#start">Start a trip<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="#join">Join with a link</a></div>
+<main id="main">
+  <!-- 1. Dawn over the range: the page's one big moment -->
+  <section class="hero" id="top" aria-labelledby="hero-h">
+    <div class="sky" aria-hidden="true">
+      <div class="sun"></div>
+      <canvas class="snow" id="snow"></canvas>
+      <img class="range" data-depth="0.15" src="art/range-far.svg" alt="">
+      <img class="range" data-depth="0.35" src="art/range-mid.svg" alt="">
+      <img class="range" data-depth="0.6" src="art/range-near.svg" alt="">
+      <img class="range range--front" data-depth="0.9" src="art/range-front.svg" alt="">
+    </div>
+    <div class="hero__copy">
+      <h1 id="hero-h">Group trips, planned around everyone</h1>
+      <p class="hero__lead">Friends add where they'd go, what they eat and how they travel. WanderFolk suggests places that suit all of you, then plans each day.</p>
+      <div class="hero__actions">
+        <a class="btn btn--glow btn--big" href="#start">Start a trip</a>
+        <a class="btn btn--ghost" href="#join">Join with a link</a>
       </div>
-      <div class="hero__window" data-fx="silk-folds" data-fx-seed="7" role="img" aria-label="WanderFolk reading four friends' notes and proposing six places for their weekend">
-        <div class="ly-piece d-win" aria-hidden="true">
-          <div class="d-win__bar"><span class="d-win__dots"><i></i><i></i><i></i></span><span><b>Lake weekend</b> · 3 days from Oakland</span><span class="sp"></span><span>4 people · 14 notes</span></div>
-          <div class="d-win__body">
-            <div class="people">
-              <div class="t is-on"><i style="background:#f3c98b">RU</i><b>Ruth</b><time>now</time><span>Budget about $100 a day · private</span></div>
-              <div class="t"><i style="background:#9fd3b5">KO</i><b>Kofi</b><time>12m</time><span>Vegetarian, loves a long hike</span></div>
-              <div class="t"><i style="background:#a9c4f0">BE</i><b>Beatriz</b><time>1h</time><span>No drives over 3 hours</span></div>
-              <div class="t"><i style="background:#f0b4a9">DA</i><b>Dario</b><time>2h</time><span>Rent a cabin, BBQ night</span></div>
-            </div>
-            <div class="convo">
-              <div class="d-chat" data-ly-steps="900">
-                <div class="d-msg d-msg--me">Budget about $100 a day, please keep that between us<small>Private</small></div>
-                <div class="d-tool" data-step>Reading 14 notes from 4 people</div>
-                <div class="d-msg d-msg--bot" data-step>6 places fit all four of you. Lake Tahoe is closest to a cabin under 3 hours away, with vegetarian dinners each night.<small>Ruth's note stays private</small></div>
-                <div class="acts" data-step><span>See proposals</span><span>Vote</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div></div>
-  </section>
-
-  <section class="section" id="planner" aria-labelledby="planner-h">
-    <div class="wrap">
-      <div class="grid">
-        <h2 id="planner-h" class="span-5">Proposals and the plan, in one place</h2>
-        <p class="span-6 start-7">The group votes on each place. Choose one and WanderFolk writes the days, with the note behind every stop. <a class="link" href="#how">See the 3 steps</a></p>
-      </div>
-      <div class="ui app fill" role="img" aria-label="The proposals for a lake weekend beside the first day of the chosen plan, each stop marked with the note that shaped it" data-ui-pause-host>
-        <div class="app__pane app__pane--list">
-          <div class="ui ui-panel ui-win" data-ui="window" data-ui-still data-open="Proposed" data-work="Voting" data-done="All voted">
-            <div class="ui-win__bar">
-              <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="ui-win__crumb">Lake weekend <i>/</i> <b>Proposals</b></span>
-              <span class="ui-spacer"></span>
-            </div>
-            <div class="ui-win__body">
-              <nav class="ui-win__side" aria-hidden="true">
-                <span class="ui-win__nav is-on">This round<em>6</em></span>
-                <span class="ui-win__nav">Earlier<em>3</em></span>
-                <span class="ui-win__nav">Our own pick</span>
-                <span class="ui-win__label">Trip</span>
-                <span class="ui-win__nav">Packing</span>
-                <span class="ui-win__nav">Feedback</span>
-              </nav>
-              <div class="ui-win__main">
-                <div class="ui-win__cols" aria-hidden="true"><span>Place</span><span>Why it fits</span><span>Status</span><span>Votes</span></div>
-                <ul class="ui-win__rows">
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">LT</span><span class="ui-win__who">Lake Tahoe</span><span class="ui-win__sub">Cabins, trails, 3h 10m drive</span><span class="ui-win__st is-done" data-st>All voted</span><span class="ui-win__age">4</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">BS</span><span class="ui-win__who">Big Sur</span><span class="ui-win__sub">Coast hikes, one base town</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">2</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">MC</span><span class="ui-win__who">Mendocino</span><span class="ui-win__sub">Quiet town, vegetarian cafes</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">2</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">SC</span><span class="ui-win__who">Santa Cruz</span><span class="ui-win__sub">Beach, boardwalk, short drive</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">1</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">NV</span><span class="ui-win__who">Napa Valley</span><span class="ui-win__sub">Food, slow days, over budget</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">0</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">YV</span><span class="ui-win__who">Yosemite Valley</span><span class="ui-win__sub">Big hikes, 4h drive</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">1</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">PR</span><span class="ui-win__who">Point Reyes</span><span class="ui-win__sub">Earlier round, coast walks</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">0</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">MB</span><span class="ui-win__who">Monterey</span><span class="ui-win__sub">Earlier round, aquarium day</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">0</span></li>
-                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">SO</span><span class="ui-win__who">Sonoma Coast</span><span class="ui-win__sub">Earlier round, cabins by the sea</span><span class="ui-win__st" data-st>Proposed</span><span class="ui-win__age">0</span></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="app__pane app__pane--open" data-ui-loop>
-          <div class="ui ui-doc" data-ui="doc">
-            <article class="ui-doc__page">
-              <div class="ui-doc__label">Lake Tahoe · 3 days · the plan</div>
-              <div class="ui-doc__title">Day 1, Saturday</div>
-              <div class="ui-doc__text">Leave Oakland at 9:00 and stop for lunch in Auburn. Check in to the cabin at <mark class="ui-doc__mark is-on">3:00 PM, under 3 hours of driving</mark> in all.</div>
-              <div class="ui-doc__text">Walk the Emerald Bay shore trail, 2 miles, then dinner at a <mark class="ui-doc__mark" data-kind="Food" data-msg="Kofi is vegetarian." data-where="Kofi's notes, this trip">vegetarian-friendly taqueria</mark> in South Lake Tahoe.</div>
-              <div class="ui-doc__title">Day 2, Sunday</div>
-              <div class="ui-doc__text">A slow morning, <mark class="ui-doc__mark" data-kind="Feedback" data-msg="Dario said the 7am hike on the last trip was far too early." data-where="After the coast weekend in May">first plans at 10:00</mark>. The Rubicon Trail to Vikingsholm, 4.5 miles.</div>
-              <div class="ui-doc__text">BBQ night at the cabin: <mark class="ui-doc__mark" data-kind="Private" data-msg="Shaped by a private preference. The group doesn't see whose." data-where="A private note">free and low-cost stops</mark> all afternoon.</div>
-              <div class="ui-doc__title">Day 3, Monday</div>
-              <div class="ui-doc__text">Breakfast by the lake, pack up by 11:00, home before dark.</div>
-            </article>
-            <aside class="ui-doc__note ui-panel is-on" aria-live="polite">
-              <div class="ui-doc__kind"><span class="ui-doc__dot"></span><span data-doc-kind>Travel style</span></div>
-              <div class="ui-doc__msg" data-doc-msg>Beatriz asked for no drives over 3 hours.</div>
-              <div class="ui-doc__where" data-doc-where>Beatriz's notes, this trip</div>
-            </aside>
-          </div>
-        </div>
-      </div>
+      <p class="hero__fine">Free, no account. Up to 12 people, 1 to 7 days.</p>
     </div>
   </section>
 
-  <section class="section" id="how" style="--h: 1; --hm: 2" aria-labelledby="how-h">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 id="how-h">A trip in 3 steps</h2>
-      </div>
-      <div class="grid">
-        <article class="card card--row card--open span-4 m-nolift">
-          <span class="step-num">1</span>
-          <h3>Add everyone's notes</h3>
-          <p>Places, food, travel style and an idea. Mark a note private and only the planner reads it.</p>
-          <div class="panel"><div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:340px;--ay:32px" data-ui-loop>
-            <div class="ui ui-panel ui-toggles" data-ui="toggles">
-              <div class="ui-head">
-                <div class="ui-title">Ruth's notes</div>
-                <span class="ui-spacer"></span>
-                <div class="ui-meta" data-tg-count>1 of 4 private</div>
-              </div>
-              <ul class="ui-toggles__list">
-                <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Somewhere with a lake</span><span class="ui-tg__sub">Places</span></span><button class="ui-switch" type="button" role="switch" aria-checked="false" aria-label="Keep the place note private"><i></i></button></li>
-                <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Budget about $100 a day</span><span class="ui-tg__sub">Travel style</span></span><button class="ui-switch is-on" type="button" role="switch" aria-checked="true" aria-label="Keep the budget note private"><i></i></button></li>
-                <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Allergic to peanuts</span><span class="ui-tg__sub">Food</span></span><button class="ui-switch" type="button" role="switch" aria-checked="false" aria-label="Keep the food note private"><i></i></button></li>
-                <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">A night of stargazing</span><span class="ui-tg__sub">Idea</span></span><button class="ui-switch" type="button" role="switch" aria-checked="false" aria-label="Keep the idea private"><i></i></button></li>
-              </ul>
-            </div>
-          </div></div></div>
-        </article>
-        <article class="card card--row card--open span-4 m-nolift">
-          <span class="step-num">2</span>
-          <h3>Vote on the trip proposals</h3>
-          <p>Each place says why it fits, what to watch out for, the drive and the budget.</p>
-          <div class="panel"><div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:360px;--ay:32px">
-            <div class="ui ui-notify" data-ui="notify">
-              <ul class="ui-notify__list">
-                <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M8 2.5 9.6 6l3.9.4-2.9 2.6.8 3.8L8 10.9l-3.4 1.9.8-3.8L2.5 6.4 6.4 6z"/></svg></span><span class="ui-note__text"><span class="ui-note__title">6 proposals ready<time>now</time></span><span class="ui-note__body">From 14 notes by 4 people</span></span></li>
-                <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="2">KO</span><span class="ui-note__text"><span class="ui-note__title">Kofi voted for Lake Tahoe<time>3m</time></span><span class="ui-note__body">3 of 4 votes in</span></span></li>
-                <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Lake Tahoe chosen<time>8m</time></span><span class="ui-note__body">The 3-day plan is ready</span></span></li>
-              </ul>
-            </div>
-          </div></div></div>
-        </article>
-        <article class="card card--row card--open span-4 m-nolift">
-          <span class="step-num">3</span>
-          <h3>Pack for the trip together</h3>
-          <p>A shared packing list, the map, and directions from your start city.</p>
-          <div class="panel"><div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:340px;--ay:32px">
-            <div class="ui ui-panel ui-checks" data-ui="checklist">
-              <div class="ui-checks__head"><div class="ui-title">Packing list</div><span class="ui-spacer"></span><div class="ui-meta" data-checks-count>3 of 5</div></div>
-              <div class="ui-checks__bar"><i data-checks-bar style="--k:0.6"></i></div>
-              <ul class="ui-checks__list">
-                <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Sunscreen · Ruth</span></li>
-                <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">First-aid kit · Beatriz</span></li>
-                <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Hiking boots · Kofi</span></li>
-                <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Grill tongs · Dario</span></li>
-                <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Speaker · Dario</span></li>
-              </ul>
-            </div>
-          </div></div></div>
-        </article>
-      </div>
+  <!-- 2. The climb: the four steps as camps on a trail that draws as you scroll -->
+  <section class="climb" id="climb" aria-labelledby="climb-h">
+    <div class="climb__head">
+      <h2 id="climb-h">From group chat to summit in four camps</h2>
+      <p>Everyone has a say, nobody has to repeat themselves, and the plan shows why it looks the way it does.</p>
     </div>
-  </section>
-
-  <section class="section" id="privacy" aria-labelledby="privacy-h">
-    <div class="wrap">
-      <div class="grid">
-        <div class="span-5 stack-6">
-          <h2 id="privacy-h">Private notes the trip plan never shows</h2>
-          <p class="t-lead">Mark a note private and WanderFolk still plans around it. The group sees “a private preference”, never the note or who wrote it.</p>
-          <div class="stack-4">
-            <p>Every proposal and plan is checked before anyone sees it.</p>
-            <p>Amounts and wording from private notes are removed.</p>
-            <p>Only the owner can delete a private note.</p>
+    <div class="camps-wrap">
+      <svg class="trail" viewBox="0 0 100 1000" preserveAspectRatio="none" aria-hidden="true">
+        <path class="trail__base" d="M50 0 C 10 120, 90 240, 50 360 S 10 600, 50 720 S 90 900, 50 1000"/>
+        <path class="trail__done" id="trail" d="M50 0 C 10 120, 90 240, 50 360 S 10 600, 50 720 S 90 900, 50 1000"/>
+      </svg>
+      <ol class="camps">
+        <li class="camp">
+          <div class="camp__text">
+            <p class="camp__alt">Base camp</p>
+            <h3>Everyone adds their notes</h3>
+            <p>Places they'd love, food needs, how they like to travel and one idea for this trip. Tick private for anything only the planner should see.</p>
           </div>
-          <a class="link" href="#planner">See a private note in a plan</a>
-        </div>
-        <div class="frame frame--split frame--lit span-6 start-7" data-visual>
-          <div class="dg" data-diagram><script type="application/json">{"layout":"lanes","alt":"Ruth's private budget note goes to the privacy guard, which checks the proposals and the plan, so the group sees only a private preference.","input":{"label":"Note","icon":"ui:lock","sub":"Private"},"core":{"label":"Privacy guard","icon":"ui:shield"},"lanes":[{"label":"Proposals","icon":"ui:map","done":true,"sub":"Checked"},{"label":"Plan","icon":"ui:calendar","done":true,"sub":"Checked"},{"label":"Group","icon":"ui:users","done":true,"sub":"Sees no note"}]}</script></div>
-        </div>
-      </div>
-      <div class="grid figures" data-moment="counter-rolls">
-        <div class="span-4"><p class="t-stat">12</p><p class="t-small muted">people on one trip</p></div>
-        <div class="span-4"><p class="t-stat">7</p><p class="t-small muted">days at most</p></div>
-        <div class="span-4"><p class="t-stat">6</p><p class="t-small muted">places in each round of proposals</p></div>
-      </div>
-    </div>
-  </section>
+          <div class="camp__scene" aria-hidden="true">
+            <div class="note"><b>Ruth</b><span>Somewhere with a lake</span></div>
+            <div class="note"><b>Kofi</b><span>Vegetarian, loves a long hike</span></div>
+            <div class="note note--lock"><b>Beatriz</b><span>Private note</span><i class="lock">🔒</i></div>
+            <div class="note"><b>Dario</b><span>Rent a cabin, BBQ night</span></div>
+          </div>
+        </li>
 
-  <section class="section" id="memory" aria-labelledby="memory-h">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 id="memory-h">Remembers the group for the next trip. <span class="muted">Food needs, travel style and feedback carry over.</span></h2>
-      </div>
-      <div class="grid">
-        <article class="card card--row card--open span-6 m-nolift">
-          <h3>Answers questions about the group</h3>
-          <p>Ask in plain words. Places and ideas stay with one trip.</p>
-          <div class="panel"><div class="stage stage--fade-br"><div class="at-corner" style="--ax:40px;--ay:40px;--w:420px">
-            <div class="ui ui-panel ui-chat" data-ui="chat">
-              <div class="ui-head"><span class="ui-agent" aria-hidden="true"></span><div class="ui-title">WanderFolk memory</div><span class="ui-spacer"></span></div>
-              <div class="ui-chat__body">
-                <div class="ui-msg ui-msg--me" data-chat-q><span class="ui-msg__text">Who has food needs?</span></div>
-                <div class="ui-msg ui-msg--bot" data-chat-a>
-                  <span class="ui-agent ui-msg__av" aria-hidden="true"></span>
-                  <span class="ui-msg__col">
-                    <span class="ui-chat__answer">Kofi is vegetarian and Ruth is <b>allergic to peanuts</b>. Both came over from the coast weekend.</span>
-                    <span class="ui-chat__srcs"><span class="ui-chat__src"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3"/></svg>Kofi's notes</span><span class="ui-chat__src"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3"/></svg>Ruth's notes</span></span>
-                  </span>
-                </div>
-              </div>
+        <li class="camp">
+          <div class="camp__text">
+            <p class="camp__alt">Camp two</p>
+            <h3>WanderFolk suggests places that fit</h3>
+            <p>Five or six options, each with why it suits your group, what to watch out for, the drive and a rough budget.</p>
+          </div>
+          <div class="camp__scene" aria-hidden="true">
+            <div class="pick pick--back"><p class="pick__name">Big Sur</p></div>
+            <div class="pick">
+              <p class="pick__name">Lake Tahoe</p>
+              <p class="pick__why">Cabins by the water, vegetarian dinners in town, trails for Kofi.</p>
+              <p class="pick__meta"><span>3 h 10 m drive</span><span>$$</span></p>
             </div>
-          </div></div></div>
-        </article>
-        <article class="card card--row card--open span-6 m-nolift">
-          <h3>Plans with Google Maps and Claude</h3>
-          <p>Mem0 keeps what people said, Supabase keeps the trips.</p>
-          <div class="panel"><div class="dg" data-diagram><script type="application/json">{"layout":"hub","alt":"WanderFolk works with Google Maps, Claude, Mem0 and Supabase.","center":{"label":"WanderFolk","icon":"ui:compass"},"spokes":[{"label":"Google Maps","icon":"google-maps"},{"label":"Claude","icon":"claude"},{"label":"Mem0","icon":"mem0"},{"label":"Supabase","icon":"supabase"}]}</script></div></div>
-        </article>
-      </div>
+          </div>
+        </li>
+
+        <li class="camp">
+          <div class="camp__text">
+            <p class="camp__alt">Camp three</p>
+            <h3>The group votes</h3>
+            <p>Tap the places you'd go. The favourite rises to the top, and anyone can pick it for the group.</p>
+          </div>
+          <div class="camp__scene" aria-hidden="true">
+            <div class="votes">
+              <div class="vote"><span>Lake Tahoe</span><i style="--v:4"></i><b>4</b></div>
+              <div class="vote"><span>Big Sur</span><i style="--v:2"></i><b>2</b></div>
+              <div class="vote"><span>Mendocino</span><i style="--v:1"></i><b>1</b></div>
+            </div>
+          </div>
+        </li>
+
+        <li class="camp camp--summit">
+          <div class="camp__text">
+            <p class="camp__alt">Summit</p>
+            <h3>A plan with the reason for every stop</h3>
+            <p>A map, directions from your city, a day-by-day plan and a shared packing list. Each choice says whose note shaped it.</p>
+          </div>
+          <div class="camp__scene" aria-hidden="true">
+            <div class="day">
+              <p class="day__title">Sunday at the lake</p>
+              <p class="stop"><time>10:00</time>Rubicon Trail to Vikingsholm</p>
+              <p class="because">Starts late because Dario said the 7am hike last time was too early.</p>
+              <p class="stop"><time>18:30</time>BBQ night at the cabin</p>
+            </div>
+          </div>
+        </li>
+      </ol>
     </div>
   </section>
 
-  <section class="section" id="start" aria-labelledby="start-h">
-    <div class="wrap">
-      <div class="grid grid--top">
-        <div class="span-6 stack-6">
-          <h2 id="start-h">Start a trip for your group</h2>
-          <p>No destination needed yet. You get a private link to share; nobody needs an account.</p>
-          <form class="form" id="create" action="/api/trips" method="post" novalidate data-fix="{n} to fix before the trip can start.">
-            <div class="field field--full"><label for="f-name">Trip name</label>
-              <input id="f-name" name="name" type="text" maxlength="80" autocomplete="off" required aria-describedby="f-name-err">
-              <p class="field__error" id="f-name-err" hidden>Write a name for the trip, like Lake weekend.</p></div>
-            <div class="field"><label for="f-origin">Starting from</label>
-              <input id="f-origin" name="origin" type="text" maxlength="80" autocomplete="address-level2"></div>
-            <div class="field"><label for="f-days">Days</label>
-              <select id="f-days" name="days"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
-            <div class="field field--full"><label for="f-members">Who's coming, up to 12</label>
-              <textarea id="f-members" name="members" rows="3" required aria-describedby="f-members-hint f-members-err"></textarea>
-              <p class="t-small muted" id="f-members-hint">One name per line, or separated by commas.</p>
-              <p class="field__error" id="f-members-err" hidden>Write at least one name.</p></div>
-            <div class="field field--full"><label for="f-earlier">Earlier trip link, to carry over what WanderFolk learned</label>
-              <input id="f-earlier" name="earlier" type="text" autocomplete="off" aria-describedby="f-earlier-err">
-              <p class="field__error" id="f-earlier-err" hidden></p></div>
-            <div class="field field--full" id="code-field" hidden><label for="f-code">Access code</label>
-              <input id="f-code" name="code" type="password" autocomplete="off" disabled aria-describedby="f-code-err">
-              <p class="field__error" id="f-code-err" hidden>Write the access code you were given.</p></div>
-            <div class="btn-row"><button class="btn btn--primary" type="submit">Start a trip<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></button></div>
-            <p class="form__status" role="status" data-form-status></p>
-          </form>
+  <!-- 3. Try it: a quick, local preview of how a group's likes turn into a place -->
+  <section class="try" id="try" aria-labelledby="try-h">
+    <div class="try__head">
+      <h2 id="try-h">What's your group into?</h2>
+      <p>Pick a few and watch the suggestion change. This is a quick preview; the real planner reads everyone's notes.</p>
+    </div>
+    <div class="try__body">
+      <fieldset class="chips" id="vibes">
+        <legend class="sr">Things your group likes</legend>
+        <label><input type="checkbox" value="snow" checked><span>❄️ Snowy peaks</span></label>
+        <label><input type="checkbox" value="lake" checked><span>🏞️ A lake</span></label>
+        <label><input type="checkbox" value="hike"><span>🥾 Long hikes</span></label>
+        <label><input type="checkbox" value="beach"><span>🏖️ Beach days</span></label>
+        <label><input type="checkbox" value="food"><span>🍜 Great food</span></label>
+        <label><input type="checkbox" value="slow"><span>😌 Slow mornings</span></label>
+        <label><input type="checkbox" value="budget"><span>💸 Low budget</span></label>
+        <label><input type="checkbox" value="city"><span>🌃 City nights</span></label>
+        <label><input type="checkbox" value="wine"><span>🍷 Wine country</span></label>
+      </fieldset>
+      <article class="result" id="result" aria-live="polite">
+        <div class="result__art" aria-hidden="true"></div>
+        <p class="result__label">Your group might love</p>
+        <h3 class="result__name" id="r-name">Lake Tahoe</h3>
+        <p class="result__line" id="r-line">Snowy peaks above a deep blue lake, cabins and easy trails.</p>
+        <div class="match"><span class="match__bar"><i id="r-bar"></i></span><span id="r-score">Fits 2 of 2 picks</span></div>
+        <button class="btn btn--glow" type="button" id="r-plan">Plan Lake Tahoe with friends</button>
+      </article>
+    </div>
+  </section>
+
+  <!-- 4. Two promises, kept short -->
+  <section class="promises" aria-label="Privacy and memory">
+    <div class="promise">
+      <h2>Private notes stay private</h2>
+      <p>Budgets and health needs shape the plan, but the group only ever sees “a private preference”: never the note, the amount or who wrote it.</p>
+    </div>
+    <div class="promise">
+      <h2>It remembers your crew</h2>
+      <p>Food needs, travel style and feedback carry over to your next trip together, so the 7am-hike mistake only happens once.</p>
+    </div>
+  </section>
+
+  <!-- 5. The summit: start or join -->
+  <section class="summit" id="start" aria-labelledby="start-h">
+    <div class="summit__card">
+      <h2 id="start-h">Start a trip for your group</h2>
+      <p class="summit__lead">No destination needed yet. You'll get a private link to share; nobody needs an account.</p>
+      <form id="create" action="/api/trips" method="post" novalidate>
+        <div class="field">
+          <label for="f-name">Trip name</label>
+          <input id="f-name" name="name" type="text" maxlength="80" autocomplete="off" required aria-describedby="f-name-err" placeholder="Lake weekend">
+          <p class="err" id="f-name-err" hidden>Write a name for the trip.</p>
         </div>
-        <div class="span-6 start-7 stack-6" id="join">
-          <h3 class="t-card">Join a trip</h3>
-          <form class="form" id="join-form" action="/trip/" method="get" novalidate>
-            <div class="field field--full"><label for="f-link">Trip link or code</label>
-              <input id="f-link" name="trip" type="text" autocomplete="off" required aria-describedby="f-link-err">
-              <p class="field__error" id="f-link-err" hidden>Paste the link a friend sent you.</p></div>
-            <div class="btn-row"><button class="btn btn--secondary" type="submit">Join the trip</button></div>
-            <p class="form__status" role="status" data-form-status></p>
-          </form>
-          <p>Anyone with a trip's link can open it, so share it only with the group.</p>
-          <div id="recent-box" hidden>
-            <h3 class="t-card">Trips on this device</h3>
-            <ul class="recent" id="recent"></ul>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-origin">Starting from</label>
+            <input id="f-origin" name="origin" type="text" maxlength="80" autocomplete="address-level2" placeholder="San Francisco">
+          </div>
+          <div class="field field--days">
+            <label for="f-days">Days</label>
+            <select id="f-days" name="days"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
           </div>
         </div>
+        <div class="field">
+          <label for="f-members">Who's coming? Up to 12</label>
+          <textarea id="f-members" name="members" rows="3" required aria-describedby="f-members-hint f-members-err" placeholder="Ruth, Kofi, Beatriz, Dario"></textarea>
+          <p class="hint" id="f-members-hint">One name per line, or separated by commas.</p>
+          <p class="err" id="f-members-err" hidden>Write at least one name.</p>
+        </div>
+        <details class="more">
+          <summary>Travelled together before?</summary>
+          <div class="field">
+            <label for="f-earlier">Link to your earlier trip</label>
+            <input id="f-earlier" name="earlier" type="text" autocomplete="off" aria-describedby="f-earlier-hint f-earlier-err">
+            <p class="hint" id="f-earlier-hint">Carries over everyone's food needs, travel style and feedback.</p>
+            <p class="err" id="f-earlier-err" hidden></p>
+          </div>
+        </details>
+        <div class="field" id="code-field" hidden>
+          <label for="f-code">Access code</label>
+          <input id="f-code" name="code" type="password" autocomplete="off" disabled aria-describedby="f-code-err">
+          <p class="err" id="f-code-err" hidden>Write the access code you were given.</p>
+        </div>
+        <button class="btn btn--glow btn--big btn--full" type="submit">Start a trip</button>
+        <p class="status" role="status" data-form-status></p>
+      </form>
+    </div>
+
+    <div class="summit__side" id="join">
+      <h2 class="side-h">Join a trip</h2>
+      <form id="join-form" action="/trip/" method="get" novalidate>
+        <div class="field">
+          <label for="f-link">Trip link or code</label>
+          <input id="f-link" name="trip" type="text" autocomplete="off" required aria-describedby="f-link-err">
+          <p class="err" id="f-link-err" hidden>Paste the link a friend sent you.</p>
+        </div>
+        <button class="btn btn--line btn--full" type="submit">Join the trip</button>
+        <p class="status" role="status" data-form-status></p>
+      </form>
+      <p class="side-note">Anyone with a trip's link can open it, so share it only with the group.</p>
+      <div id="recent-box" hidden>
+        <h2 class="side-h">Your trips on this device</h2>
+        <ul class="recent" id="recent"></ul>
       </div>
     </div>
   </section>
 </main>
 
-<footer class="footer closing" id="contact" aria-labelledby="close-h">
-  <div class="wrap">
-    <div class="closing__cta close--word">
-      <div class="section-head--split">
-        <div><h2 id="close-h">Plan the next trip together</h2><p class="t-lead">Up to 12 people, 1 to 7 days, one link.</p></div>
-        <a class="btn btn--primary" href="#start">Start a trip<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
-      </div>
-      <p class="close__word" aria-hidden="true">WanderFolk</p>
-    </div>
-    <div class="closing__links">
-      <div class="grid">
-        <div class="span-4 stack-4">
-          <a class="nav__logo" href="#top"><span class="mark" data-mark="ring" aria-hidden="true"></span>WanderFolk</a>
-          <p class="footer__lede">Trips planned with the whole group.</p>
-        </div>
-        <div class="span-2 footer__col"><h3>Planner</h3><ul><li><a href="#planner">Proposals</a></li><li><a href="#how">Steps</a></li></ul></div>
-        <div class="span-2 footer__col"><h3>Privacy</h3><ul><li><a href="#privacy">Private notes</a></li></ul></div>
-        <div class="span-2 footer__col"><h3>Memory</h3><ul><li><a href="#memory">What carries over</a></li></ul></div>
-        <div class="span-2 footer__col"><h3>Trips</h3><ul><li><a href="#start">New trip</a></li><li><a href="#join">Join by link</a></li></ul></div>
-      </div>
-      <div class="footer__legal">
-        <span>&copy; 2026 WanderFolk, built at SF Tech Week &nbsp; <a href="privacy.html">Privacy</a></span>
-        <div class="socials"></div>
-        <span>Product names and logos are trademarks of their owners</span>
-      </div>
-    </div>
-  </div>
+<footer class="foot">
+  <a class="brand brand--foot" href="#top">
+    <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M2 27 12 9l5 8 4-5 9 15Z" fill="currentColor"/><path d="M12 9l3.2 5.2-1.7-.9-1.6 1.6-1.4-1.3Z" fill="#14213D"/><circle cx="24" cy="7" r="3" fill="var(--sun)"/></svg>
+    WanderFolk
+  </a>
+  <p>Built at SF Tech Week 2026.</p>
+  <nav aria-label="Footer"><a href="privacy.html">Privacy</a><a href="https://github.com/Shraddhag18/WanderFolk">Source on GitHub</a></nav>
 </footer>
 
-<script type="module" src="assets/system.js"></script>
-<script type="module" src="assets/motion/motion.js"></script>
-<script type="module" src="assets/layout/layout.js"></script>
-<script type="module" src="assets/diagrams/mount.js"></script>
 <script type="module" src="landing.js"></script>
 </body>
 </html>

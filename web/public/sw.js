@@ -1,7 +1,7 @@
 // WanderFolk service worker: makes the app installable and opens it fast.
 // Trip data (/api) always comes from the network, so nobody sees stale votes or plans.
-const CACHE = "wanderfolk-v2";
-const SHELL = ["/", "/trip/", "/manifest.webmanifest", "/icon.svg", "/scene.svg"];
+const CACHE = "wanderfolk-v3";
+const SHELL = ["/", "/trip/", "/manifest.webmanifest", "/icon.svg", "/landing.css", "/landing.js", "/art/range-far.svg", "/art/range-mid.svg", "/art/range-near.svg", "/art/range-front.svg", "/art/banner.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

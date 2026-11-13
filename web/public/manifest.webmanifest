@@ -1,15 +1,28 @@
 {
   "name": "WanderFolk",
   "short_name": "WanderFolk",
-  "description": "Plan trips with friends. WanderFolk remembers what everyone likes, and what went wrong last time.",
+  "description": "Group trips, planned around everyone: suggestions that suit the whole group, a vote, and a day-by-day plan.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#fbf6ee",
-  "theme_color": "#e4572e",
+  "background_color": "#14213D",
+  "theme_color": "#14213D",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

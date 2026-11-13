@@ -6,38 +6,33 @@
 <title>Privacy: what WanderFolk saves and how to delete it</title>
 <meta name="description" content="What WanderFolk keeps about you and your trips, who processes it, and how to delete it.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#f7f9f8">
+<meta name="theme-color" content="#F5F8FC">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wdth,wght@85..100,400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/system.css">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css">
 <style>
-:root {
-  --p-bg: #f7f9f8; --p-surface: #ebf0ee; --p-ink: #06525c; --p-muted: #2f737d;
-  --p-accent: #06525c; --p-accent-ink: #f7f9f8; --p-action: #06525c; --p-action-ink: #f7f9f8;
-  --font-display: "IBM Plex Sans", system-ui, sans-serif;
-  --font-text: "IBM Plex Sans", system-ui, sans-serif;
-  --display-weight: 500; --display-tracking: -0.025em;
-}
 /* a plain reading page: one column, no section screens */
 .doc { max-width: 720px; margin: 0 auto; padding: 48px 24px 96px; }
 .doc h1 { font-size: clamp(32px, 5vw, 48px); margin: 32px 0 8px; }
 .doc h2 { font-size: 24px; margin: 48px 0 12px; }
-.doc p, .doc li { font-size: 17px; line-height: 1.65; color: var(--ink); }
+.doc p, .doc li { font-size: 17px; line-height: 1.65; }
 .doc ul { padding-left: 20px; }
 .doc li { margin-bottom: 8px; }
-.doc .updated { color: var(--muted); font-size: 15px; }
+.doc .updated { color: var(--muted); font-size: 15px; margin-top: 8px; }
+.doc h1, .doc h2 { margin-bottom: 8px; }
+.doc a { color: inherit; }
 .doc table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 16px; }
 .doc th, .doc td { text-align: left; vertical-align: top; padding: 10px 8px; border-bottom: 1px solid var(--line); }
 .doc th { font-weight: 500; }
 .doc p a:not(.back), .doc li a { text-decoration: underline; text-underline-offset: 3px; }
-.back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; color: var(--ink); font-weight: 500; }
+.back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; color: inherit; font-weight: 600; }
 @media (max-width: 560px) { .doc table, .doc thead, .doc tbody, .doc tr, .doc th, .doc td { display: block; } .doc thead { display: none; } .doc td:first-child { font-weight: 500; border-bottom: 0; padding-bottom: 0; } }
 </style>
 </head>
 <body>
 <main class="doc" id="top">
-  <a class="back" href="/"><span class="mark" data-mark="ring" aria-hidden="true"></span>WanderFolk</a>
+  <a class="brand" href="/"><svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M2 27 12 9l5 8 4-5 9 15Z" fill="currentColor"/><path d="M12 9l3.2 5.2-1.7-.9-1.6 1.6-1.4-1.3Z" fill="#fff"/><circle cx="24" cy="7" r="3" fill="#FFC857"/></svg>WanderFolk</a>
 
   <h1>Privacy</h1>
   <p class="updated">Last updated 12 November 2026</p>

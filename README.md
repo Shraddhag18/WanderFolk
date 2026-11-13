@@ -81,7 +81,8 @@ Then deploy on [Vercel](https://vercel.com): import this repo and add the same k
 | File | What it does |
 |---|---|
 | `server.py` | The API the web app talks to; filters out other people's private notes |
-| `web/public/index.html`, `landing.js` | The start page: plain HTML built with the [taste-skill](https://github.com/Leonxlnx/taste-skill) kit in `web/public/assets`; it starts and joins trips through the API |
+| `web/public/index.html`, `landing.css`, `landing.js` | The start page: a dawn mountain range that moves with the pointer, the four steps as camps on a trail, a "what's your group into?" preview, and the start and join forms |
+| `web/public/art/`, `web/tools/mountains.py` | The snow-capped mountain artwork, and the script that draws it (`python3 web/tools/mountains.py web/public/art`) |
 | `web/src/`, `web/trip/` | The trip app (React + Vite) at `/trip/`: the trip page and its six tabs, installable on phones |
 | `planner.py` | Proposes destinations, builds the itinerary with a cited reason for every choice, and runs the privacy guard |
 | `memory_store.py` | Mem0 scopes (`user_id`, `run_id`, `agent_id`, `app_id`) with an offline fallback, plus where trips are saved (local file or Supabase) |
