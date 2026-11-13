@@ -23,6 +23,13 @@ from pathlib import Path
 AGENT_ID = "roamory-planner"
 APP_ID = "roamory"
 DATA_DIR = Path(__file__).parent / ".data"
+
+# On Vercel only /tmp can be written. The mem0 library writes a small config folder into the home directory on
+# import, and the offline fallback writes files: point both at /tmp there (the fallback's files don't last; real
+# hosting uses Mem0 and Supabase).
+if os.environ.get("VERCEL"):
+    os.environ.setdefault("MEM0_DIR", "/tmp/.mem0")
+    DATA_DIR = Path("/tmp/wanderfolk-data")
 _lock = threading.Lock()
 
 
