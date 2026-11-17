@@ -1,4 +1,4 @@
-// WanderFolk start page: the moving range, the road and campervan, the "try it" preview, and the start / join forms.
+// WanderFolk start page: the moving range and lake, the road and campervan, the "try it" preview, and the start / join forms.
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const tripUrl = (id) => `/trip/?trip=${encodeURIComponent(id)}`;
@@ -33,33 +33,6 @@ if (!reduced) {
   addEventListener('scroll', () => { if (scrollY < innerHeight * 1.2) { raf = 0; paint(); } }, { passive: true });
 }
 
-// ---------- light snow over the range (runs only while the hero is on screen) ----------
-const canvas = document.getElementById('snow');
-if (canvas && !reduced) {
-  const ctx = canvas.getContext('2d');
-  let flakes = [], w = 0, h = 0, on = true, raf = 0;
-  const size = () => {
-    const r = Math.min(devicePixelRatio || 1, 2);
-    w = canvas.clientWidth; h = canvas.clientHeight;
-    canvas.width = w * r; canvas.height = h * r; ctx.setTransform(r, 0, 0, r, 0, 0);
-    const n = Math.round(Math.min(140, w * h / 9000));
-    flakes = Array.from({ length: n }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 2 + 0.6, s: Math.random() * 0.5 + 0.25, d: Math.random() * Math.PI * 2 }));
-  };
-  const tick = () => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    for (const f of flakes) {
-      f.y += f.s; f.d += 0.01; f.x += Math.sin(f.d) * 0.3;
-      if (f.y > h) { f.y = -4; f.x = Math.random() * w; }
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
-    }
-    raf = on ? requestAnimationFrame(tick) : 0;
-  };
-  size(); addEventListener('resize', size);
-  new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on && !raf) tick(); }).observe(hero);
-  tick();
-}
-
 // ---------- a campervan drives down the road as you scroll, and each camp lights up when it gets there ----------
 const road = document.getElementById('trail');
 const wrap = document.querySelector('.camps-wrap');
@@ -69,7 +42,7 @@ if (road && wrap && van) {
   const svg = road.ownerSVGElement;
   const len = road.getTotalLength();
   const phone = matchMedia('(max-width: 860px)');
-  let box, face = 1, stops = [], idle = 0;
+  let box, stops = [], idle = 0, parked = true, lastPuff = 0, turn = 90, here = { x: 0, y: 0 };
 
   // the road is drawn in a 100 x 1000 box stretched over the camps; these turn its points into pixels on the page
   const measure = () => {
@@ -98,23 +71,44 @@ if (road && wrap && van) {
   const drive = () => {
     const top = wrap.getBoundingClientRect().top;
     const y = Math.min(box.h, Math.max(0, innerHeight * 0.6 - top));
-    const l = atY(y), here = at(l), ahead = at(l + 6), behind = at(l - 6);
-    const dx = ahead.x - behind.x, dy = ahead.y - behind.y;
-    if (Math.abs(dx) > 0.15 * Math.abs(dy)) face = dx > 0 ? 1 : -1;   // turn only on a real bend, so it doesn't flicker
+    const l = atY(y), ahead = at(l + 8), behind = at(l - 8);
+    here = at(l);
+    turn = Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / Math.PI;   // nose points the way the road runs
     van.style.setProperty('--vx', `${here.x}px`);
     van.style.setProperty('--vy', `${here.y}px`);
-    van.style.setProperty('--face', face);
-    van.style.setProperty('--tilt', `${face * 8}deg`);   // nose down a little: it's driving downhill
+    van.style.setProperty('--turn', `${turn.toFixed(1)}deg`);
     camps.forEach((c, i) => c.classList.toggle('is-reached', stops[i] <= y + 1));
+  };
+
+  // a puff of exhaust from the tailpipe, left behind on the road where the van was
+  const puff = (big) => {
+    const a = turn * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+    const back = van.offsetWidth / 2 + 2, side = van.offsetWidth * 0.14;   // the pipe sits at the back, a little to one side
+    const p = document.createElement('i');
+    p.className = 'puff';
+    const drift = big ? 26 + Math.random() * 18 : 14 + Math.random() * 10, wob = (Math.random() - 0.5) * 22;
+    p.style.cssText = `--x:${(here.x - ux * back - uy * side).toFixed(1)}px;--y:${(here.y - uy * back + ux * side).toFixed(1)}px;` +
+      `--dx:${(-ux * drift - uy * wob).toFixed(1)}px;--dy:${(-uy * drift + ux * wob).toFixed(1)}px;` +
+      `--o:${big ? 0.9 : 0.45};--grow:${big ? 3.2 + Math.random() : 2.2};--life:${big ? 1.7 : 1.1}s`;
+    p.addEventListener('animationend', () => p.remove());
+    wrap.appendChild(p);
   };
 
   const onScroll = () => {
     drive();
-    if (!reduced) {
-      van.classList.add('is-driving');
-      clearTimeout(idle);
-      idle = setTimeout(() => van.classList.remove('is-driving'), 180);
+    if (reduced) return;
+    const now = performance.now();
+    if (parked) {
+      // starting from cold: a big cloud first, then a few more as it pulls away
+      parked = false;
+      for (let i = 0; i < 6; i++) setTimeout(() => puff(true), i * 90);
+      lastPuff = now;
+    } else if (now - lastPuff > 260) {
+      puff(false); lastPuff = now;
     }
+    van.classList.add('is-driving');
+    clearTimeout(idle);
+    idle = setTimeout(() => { van.classList.remove('is-driving'); parked = true; }, 900);
   };
   const layout = () => { placeCamps(); drive(); };
   addEventListener('scroll', onScroll, { passive: true });

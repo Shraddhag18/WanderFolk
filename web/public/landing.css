@@ -1,4 +1,4 @@
-/* WanderFolk start page: dawn over a snow-capped range (Alpenglow palette).
+/* WanderFolk start page: sunset over a lake below snow-capped peaks (Alpenglow palette).
    One bold thing (the hero range and the trail that climbs the page); everything around it stays quiet. */
 :root {
   --snow: #F5F8FC;
@@ -61,25 +61,26 @@ img { display: block; }
 .bar__cta { min-height: 44px; padding: 0 20px; font-size: 15px; }
 @media (max-width: 760px) { .bar__links { display: none; } .bar__cta { margin-left: auto; } }
 
-/* ---------- 1. hero: dawn over the range ---------- */
+/* ---------- 1. hero: sunset over the lake ---------- */
 .hero { position: relative; height: 100svh; min-height: 640px; overflow: hidden; color: #fff; }
 /* the pine ridge drifts up a little as you scroll; this strip of the same ink keeps the ranges behind it from peeking out below */
 .hero::after { content: ""; position: absolute; inset: auto 0 0; height: 32px; background: var(--ink); z-index: 4; }
-.sky { position: absolute; inset: 0; background: linear-gradient(180deg, #2B3A67 0%, #5A5A91 22%, #B37FA8 40%, #F3A3B5 56%, #FFD3A3 70%, #FFF0DA 82%); }
-.sun { position: absolute; left: 41%; top: 68%; width: clamp(90px, 11vw, 160px); aspect-ratio: 1; border-radius: 50%; translate: -50% -50%;
-  background: radial-gradient(circle, #FFF7DD 0 44%, var(--sun) 58%, rgb(255 200 87 / 0) 71%); animation: rise 2.4s cubic-bezier(.2,.7,.2,1) both; }
+/* sunset: dusky violet overhead, through rose and coral to a warm gold glow at the horizon */
+.sky { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 42% at 47% 62%, rgb(255 214 140 / .75), transparent 70%),
+  linear-gradient(180deg, #4A3F82 0%, #7C5296 16%, #C2649A 32%, #EE7F86 46%, #FBA672 58%, #FFCB86 68%, #FFE2AE 78%); }
+.sun { position: absolute; left: 47%; top: 60%; width: clamp(90px, 11vw, 160px); aspect-ratio: 1; border-radius: 50%; translate: -50% -50%;
+  background: radial-gradient(circle, #FFF4D6 0 40%, #FFC46B 56%, rgb(255 150 90 / 0) 72%); animation: rise 2.4s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes rise { from { transform: translateY(70px); opacity: .2; } }
-.snow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 .range { position: absolute; left: -4%; bottom: 0; width: 108%; height: 74%; object-fit: cover; object-position: 50% 100%;
   transform: translate3d(var(--px, 0px), var(--py, 0px), 0); will-change: transform; animation: settle 1.6s cubic-bezier(.2,.7,.2,1) both; }
 /* on wide screens the art scales up with the width, so the back ranges sit lower to keep the sky for the words */
-@media (min-width: 900px) { .range:not(.range--front) { bottom: calc(-0.16 * 100vw * 900 / 1600 + 8vh); } }
-.range--mid { animation-delay: .08s; } .range--near { animation-delay: .16s; } .range--front { z-index: 4; animation-delay: .24s; }
+@media (min-width: 900px) { .range--far { bottom: calc(-0.16 * 100vw * 900 / 1600 + 8vh); } }
+.range--near { animation-delay: .12s; } .range--front { z-index: 4; animation-delay: .24s; }
 @keyframes settle { from { translate: 0 60px; opacity: 0; } }
 .hero__copy { position: relative; z-index: 5; max-width: calc(var(--wrap) + 2 * var(--gut)); margin: 0 auto; padding: calc(96px + 2vh) var(--gut) 0; }
 /* evening mist in front of the far range, so the words stay readable wherever a peak rises behind them */
 .hero__copy::before { content: ""; position: absolute; z-index: -1; left: calc(var(--gut) - 120px); top: 40px; width: min(980px, 92vw); height: calc(100% + 40px);
-  background: radial-gradient(ellipse 58% 52% at 40% 58%, rgb(43 58 103 / .62), rgb(43 58 103 / .26) 55%, transparent 70%); pointer-events: none; }
+  background: radial-gradient(ellipse 58% 52% at 40% 58%, rgb(74 50 110 / .5), rgb(74 50 110 / .2) 55%, transparent 70%); pointer-events: none; }
 .hero h1 { font-size: clamp(44px, 6.4vw, 92px); font-weight: 800; max-width: 13ch; text-shadow: 0 2px 30px rgb(30 30 70 / .35); }
 .hero__lead { margin-top: 22px; max-width: 34em; font-size: clamp(18px, 1.6vw, 21px); line-height: 1.55; color: rgb(255 255 255 / .94); text-shadow: 0 1px 18px rgb(30 30 70 / .45); }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
@@ -101,16 +102,21 @@ img { display: block; }
 .trail { position: absolute; left: 50%; top: 0; width: 120px; height: 100%; translate: -50% 0; overflow: visible; }
 /* the road: a soft verge, the asphalt, and a dashed centre line */
 .trail path { fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; }
-.road__shoulder { stroke: rgb(169 200 232 / .16); stroke-width: 38px; }
-.road__asphalt { stroke: #2A3A62; stroke-width: 30px; }
+.road__shoulder { stroke: rgb(169 200 232 / .16); stroke-width: 52px; }
+.road__asphalt { stroke: #2A3A62; stroke-width: 42px; }
 .road__line { stroke: var(--sun); stroke-width: 2.5px; stroke-dasharray: 14 16; stroke-linecap: butt; opacity: .85; }
-/* the campervan: placed on the road by landing.js (--vx, --vy), facing the way the road bends (--face) */
-.van { position: absolute; left: 0; top: 0; z-index: 2; width: 76px; aspect-ratio: 64 / 42; pointer-events: none;
-  transform: translate(var(--vx, 50%), var(--vy, 0px)) translate(-50%, -66%) rotate(var(--tilt, 0deg)) scaleX(var(--face, 1));
-  filter: drop-shadow(0 6px 10px rgb(0 0 0 / .35)); }
+/* the campervan, seen from above: landing.js puts it on the road (--vx, --vy) and points it along the road (--turn) */
+.van { position: absolute; left: 0; top: 0; z-index: 2; width: 56px; aspect-ratio: 2 / 1; pointer-events: none;
+  transform: translate(var(--vx, 50%), var(--vy, 0px)) translate(-50%, -50%) rotate(var(--turn, 90deg));
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / .45)); }
 .van__body { width: 100%; height: 100%; }
-.van.is-driving .van__body { animation: bump .28s ease-in-out infinite alternate; }
-@keyframes bump { to { translate: 0 -1.6px; } }
+.van.is-driving .van__body { animation: bump .22s ease-in-out infinite alternate; }
+/* exhaust: puffs left behind on the road, like a cold engine starting on a winter morning */
+.puff { position: absolute; left: var(--x); top: var(--y); z-index: 1; width: 16px; height: 16px; margin: -8px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgb(236 241 250 / .95) 0 30%, rgb(236 241 250 / .5) 55%, rgb(236 241 250 / 0) 72%);
+  animation: puff var(--life, 1.6s) ease-out forwards; }
+@keyframes puff { from { opacity: var(--o, .9); scale: .35; } 30% { opacity: var(--o, .9); } to { opacity: 0; scale: var(--grow, 3.4); translate: var(--dx) var(--dy); } }
+@keyframes bump { to { translate: 0 .8px; } }
 .camps { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(72px, 10vw, 140px); position: relative; }
 .camp { display: grid; grid-template-columns: 1fr 1fr; gap: 0 clamp(80px, 12vw, 180px); align-items: center; position: relative; }
 .camp::before { content: ""; position: absolute; left: var(--mx, 50%); top: 50%; z-index: 1; width: 22px; height: 22px; translate: -50% -50%; border-radius: 50%;
@@ -145,8 +151,9 @@ img { display: block; }
 
 @media (max-width: 860px) {
   .trail { left: 14px; translate: 0 0; width: 28px; }
-  .road__shoulder { stroke-width: 24px; } .road__asphalt { stroke-width: 18px; } .road__line { stroke-width: 2px; stroke-dasharray: 8 10; }
-  .van { width: 46px; }
+  .road__shoulder { stroke-width: 34px; } .road__asphalt { stroke-width: 27px; } .road__line { stroke-width: 2px; stroke-dasharray: 8 10; }
+  .van { width: 40px; }
+  .puff { width: 10px; height: 10px; margin: -5px; }
   .camps { gap: 72px; }
   .camp { grid-template-columns: 1fr; gap: 28px; padding-left: 52px; }
   .camp::before { left: var(--mx, 14px); top: 8px; translate: -50% 0; }
@@ -169,7 +176,7 @@ img { display: block; }
 .chips input:focus-visible + span { outline: 3px solid var(--rose); outline-offset: 3px; }
 .result { position: relative; overflow: hidden; border-radius: 28px; background: var(--ink); color: var(--on-ink); padding: 30px 30px 30px; min-height: 380px;
   display: flex; flex-direction: column; box-shadow: 0 30px 60px -30px rgb(20 33 61 / .7); }
-.result__art { position: absolute; inset: auto -10% -2px -10%; height: 62%; background: url("art/range-near.svg") 50% 100% / cover no-repeat; opacity: .5; pointer-events: none; }
+.result__art { position: absolute; inset: auto -10% -2px -10%; height: 62%; background: url("art/range-far.svg") 50% 100% / cover no-repeat; opacity: .5; pointer-events: none; }
 .result > :not(.result__art) { position: relative; }
 .result__label { color: var(--sun); font-weight: 600; font-size: 15px; }
 .result__name { font-size: clamp(40px, 5vw, 60px); font-weight: 800; margin-top: 6px; }
@@ -232,7 +239,6 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   .sun, .range, .van.is-driving .van__body { animation: none; }
   .range { transform: none; }
-  .snow { display: none; }
   .btn, .chips span, .recent a { transition: none; }
 }
 
