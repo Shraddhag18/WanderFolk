@@ -98,20 +98,26 @@ layers = [
     ("mid",  23, 700, 6, 360, 9, "#7393BD", "#C98EAA", "#F7FAFF", 0.72),
     ("near", 37, 805, 5, 330, 11, "#34496E", "#8E5A7C", "#EEF3FB", 0.76),
 ]
-for name, seed, base, peaks, amp, jag, rock, lit, snowc, line in layers:
-    pts, owner, pk = ridge(seed, base, peaks, amp, jag)
-    body = f'<path d="{path(pts, H)}" fill="{rock}"/>'
-    faces = "".join(f'<path d="{d}" fill="{lit}"/>' for d in sunlit(pts, owner, pk, base, seed + 1))
-    caps = "".join(f'<path d="{d}" fill="{snowc}"/>' for d in snow(pts, owner, pk, base, line, seed + 2))
-    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMax slice" '
-           f'aria-hidden="true">{body}{faces}{caps}</svg>')
-    open(f"{OUT}/range-{name}.svg", "w").write(svg)
+# Two widths of every layer: 16:9 for phones and tall windows, and a wider panorama (8:3) for laptops, so a wide,
+# short window never has to crop the summits off to fill its width.
+for suffix, width, more in (("", W, 1.0), ("-wide", 2400, 1.5)):
+    for name, seed, base, peaks, amp, jag, rock, lit, snowc, line in layers:
+        # wide seeds were picked by searching for the ridge with the shortest flat gap between peaks
+        if suffix:
+            seed = {"far": 141, "mid": 118, "near": 142}[name]
+        pts, owner, pk = ridge(seed, base, round(peaks * more), amp, jag, width=width)
+        body = f'<path d="{path(pts, H)}" fill="{rock}"/>'
+        faces = "".join(f'<path d="{d}" fill="{lit}"/>' for d in sunlit(pts, owner, pk, base, seed + 1))
+        caps = "".join(f'<path d="{d}" fill="{snowc}"/>' for d in snow(pts, owner, pk, base, line, seed + 2))
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {H}" preserveAspectRatio="xMidYMax slice" '
+               f'aria-hidden="true">{body}{faces}{caps}</svg>')
+        open(f"{OUT}/range-{name}{suffix}.svg", "w").write(svg)
 
-# the foreground: a dark pine ridge the page's ink colour, so the next section rises out of it
-pts, _, _ = ridge(51, 880, 6, 120, 4)
-fg = f'<path d="{path(pts, H)}" fill="#14213D"/>' + "".join(f'<path d="{d}" fill="#14213D"/>' for d in trees(pts, 52, 70, 46))
-open(f"{OUT}/range-front.svg", "w").write(
-    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true">{fg}</svg>')
+    # the foreground: a dark pine ridge the page's ink colour, so the next section rises out of it
+    pts, _, _ = ridge(51, 880, round(6 * more), 120, 4, width=width)
+    fg = f'<path d="{path(pts, H)}" fill="#14213D"/>' + "".join(f'<path d="{d}" fill="#14213D"/>' for d in trees(pts, 52, round(70 * more), 46))
+    open(f"{OUT}/range-front{suffix}.svg", "w").write(
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true">{fg}</svg>')
 print("ok")
 
 # ---- a wide, short banner for the trip page: two ranges in one file, peaks inside a 1600x400 box ----

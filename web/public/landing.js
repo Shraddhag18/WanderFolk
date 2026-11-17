@@ -1,4 +1,4 @@
-// WanderFolk start page: the moving range, the trail, the "try it" preview, and the start / join forms.
+// WanderFolk start page: the moving range, the road and campervan, the "try it" preview, and the start / join forms.
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const tripUrl = (id) => `/trip/?trip=${encodeURIComponent(id)}`;
@@ -60,36 +60,95 @@ if (canvas && !reduced) {
   tick();
 }
 
-// ---------- the trail draws itself as you climb, and each camp lights up when reached ----------
-const trail = document.getElementById('trail');
+// ---------- a campervan drives down the road as you scroll, and each camp lights up when it gets there ----------
+const road = document.getElementById('trail');
 const wrap = document.querySelector('.camps-wrap');
+const van = document.getElementById('van');
 const camps = [...document.querySelectorAll('.camp')];
-if (trail && wrap) {
-  const len = trail.getTotalLength();
-  trail.style.setProperty('--len', len);
-  const climb = () => {
-    const r = wrap.getBoundingClientRect();
-    const p = Math.min(1, Math.max(0, (innerHeight * 0.6 - r.top) / r.height));
-    trail.style.setProperty('--off', reduced ? 0 : len * (1 - p));
-    const line = innerHeight * 0.6;
-    for (const c of camps) c.classList.toggle('is-reached', reduced || c.getBoundingClientRect().top + c.offsetHeight / 2 < line);
+if (road && wrap && van) {
+  const svg = road.ownerSVGElement;
+  const len = road.getTotalLength();
+  const phone = matchMedia('(max-width: 860px)');
+  let box, face = 1, stops = [], idle = 0;
+
+  // the road is drawn in a 100 x 1000 box stretched over the camps; these turn its points into pixels on the page
+  const measure = () => {
+    const w = wrap.getBoundingClientRect(), r = svg.getBoundingClientRect();
+    box = { x: r.left - w.left, y: r.top - w.top, sx: r.width / 100, sy: r.height / 1000, h: w.height };
   };
-  addEventListener('scroll', climb, { passive: true });
-  addEventListener('resize', climb);
-  climb();
+  const at = (l) => { const p = road.getPointAtLength(Math.min(len, Math.max(0, l))); return { x: box.x + p.x * box.sx, y: box.y + p.y * box.sy }; };
+  // the road always heads down the page, so the spot at a given height can be found by halving
+  const atY = (y) => {
+    let lo = 0, hi = len;
+    for (let i = 0; i < 22; i++) { const mid = (lo + hi) / 2; if (at(mid).y < y) lo = mid; else hi = mid; }
+    return lo;
+  };
+
+  // put each camp's marker on the road, level with the camp
+  const placeCamps = () => {
+    measure();
+    stops = camps.map((c) => {
+      const y = c.offsetTop + (phone.matches ? 19 : c.offsetHeight / 2);
+      const pt = at(atY(y));
+      c.style.setProperty('--mx', `${pt.x - c.offsetLeft}px`);
+      return y;
+    });
+  };
+
+  const drive = () => {
+    const top = wrap.getBoundingClientRect().top;
+    const y = Math.min(box.h, Math.max(0, innerHeight * 0.6 - top));
+    const l = atY(y), here = at(l), ahead = at(l + 6), behind = at(l - 6);
+    const dx = ahead.x - behind.x, dy = ahead.y - behind.y;
+    if (Math.abs(dx) > 0.15 * Math.abs(dy)) face = dx > 0 ? 1 : -1;   // turn only on a real bend, so it doesn't flicker
+    van.style.setProperty('--vx', `${here.x}px`);
+    van.style.setProperty('--vy', `${here.y}px`);
+    van.style.setProperty('--face', face);
+    van.style.setProperty('--tilt', `${face * 8}deg`);   // nose down a little: it's driving downhill
+    camps.forEach((c, i) => c.classList.toggle('is-reached', stops[i] <= y + 1));
+  };
+
+  const onScroll = () => {
+    drive();
+    if (!reduced) {
+      van.classList.add('is-driving');
+      clearTimeout(idle);
+      idle = setTimeout(() => van.classList.remove('is-driving'), 180);
+    }
+  };
+  const layout = () => { placeCamps(); drive(); };
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', layout);
+  document.fonts?.ready.then(layout);
+  layout();
 }
 
 // ---------- "What's your group into?": a quick local preview, not the real planner ----------
 const PLACES = [
-  { name: 'Lake Tahoe', tags: ['snow', 'lake', 'hike', 'slow'], line: 'Snowy peaks above a deep blue lake, cabins and easy trails.' },
-  { name: 'Yosemite Valley', tags: ['snow', 'hike', 'lake'], line: 'Granite walls, waterfalls and the big hikes people talk about for years.' },
-  { name: 'Big Sur', tags: ['beach', 'hike', 'slow'], line: 'Cliffs over the Pacific, coastal trails and long, quiet evenings.' },
-  { name: 'Santa Cruz', tags: ['beach', 'food', 'budget', 'city'], line: 'Boardwalk, surf, tacos by the beach and a short drive home.' },
-  { name: 'Napa Valley', tags: ['wine', 'food', 'slow'], line: 'Vineyards, long lunches and nothing planned before ten.' },
-  { name: 'Mendocino', tags: ['beach', 'slow', 'food', 'budget'], line: 'A quiet coast town with vegetarian cafes and headland walks.' },
-  { name: 'Mammoth Lakes', tags: ['snow', 'lake', 'hike', 'budget'], line: 'High-country lakes under snowy ridges, cheaper than the big resorts.' },
-  { name: 'San Diego', tags: ['beach', 'city', 'food'], line: 'Sunny beaches by day, tacos and city nights after.' },
-  { name: 'Sonoma Coast', tags: ['wine', 'beach', 'slow'], line: 'Wine country meets wild beaches, cabins by the sea.' },
+  { name: 'Lake Tahoe', tags: ['snow', 'lake', 'hike', 'slow'], line: 'California. Snowy peaks above a deep blue lake, cabins and easy trails.' },
+  { name: 'Glacier National Park', tags: ['snow', 'lake', 'hike'], line: 'Montana. Glacial lakes, alpine roads and the hikes people talk about for years.' },
+  { name: 'Stowe', tags: ['snow', 'slow', 'food'], line: 'Vermont. Snowy hills, maple everything and cozy inns.' },
+  { name: 'Aspen', tags: ['snow', 'hike', 'wine', 'food'], line: 'Colorado. Ski days, Maroon Bells and long dinners in a pretty mountain town.' },
+  { name: 'Kenai Fjords', tags: ['snow', 'hike', 'lake'], line: 'Alaska. Glaciers, whales and huge wild country.' },
+  { name: 'Great Smoky Mountains', tags: ['hike', 'slow', 'budget'], line: 'Tennessee. Misty ridges, waterfalls and cheap cabins.' },
+  { name: 'Zion', tags: ['hike', 'budget'], line: 'Utah. Slot canyons, red cliffs and starry desert nights.' },
+  { name: 'Acadia', tags: ['hike', 'beach', 'food'], line: 'Maine. Rocky coast, sunrise hikes and lobster rolls.' },
+  { name: 'Door County', tags: ['lake', 'slow', 'wine', 'budget'], line: 'Wisconsin. Lake towns, cherry orchards and fish boils.' },
+  { name: 'Traverse City', tags: ['lake', 'beach', 'wine'], line: 'Michigan. Sand dunes, freshwater beaches and wineries.' },
+  { name: 'Maui', tags: ['beach', 'hike', 'slow'], line: 'Hawaii. Warm beaches, waterfalls and a volcano sunrise.' },
+  { name: 'Florida Keys', tags: ['beach', 'slow', 'food'], line: 'Florida. Island hopping, clear water and Key West sunsets.' },
+  { name: 'San Juan', tags: ['beach', 'food', 'city'], line: 'Puerto Rico. Old city streets and warm water, no passport needed.' },
+  { name: 'Charleston', tags: ['beach', 'food', 'slow'], line: 'South Carolina. Historic streets, Lowcountry food and Folly Beach.' },
+  { name: 'Big Sur', tags: ['beach', 'hike', 'slow'], line: 'California. Cliffs over the Pacific and long, quiet evenings.' },
+  { name: 'New Orleans', tags: ['food', 'city'], line: 'Louisiana. Jazz on every corner and the best food crawl in the country.' },
+  { name: 'Nashville', tags: ['city', 'food'], line: 'Tennessee. Live music every night and hot chicken after.' },
+  { name: 'New York City', tags: ['city', 'food'], line: 'New York. Shows, museums and a food crawl through Queens.' },
+  { name: 'Chicago', tags: ['city', 'food', 'lake'], line: 'Illinois. Lakefront rides, architecture cruises and deep dish.' },
+  { name: 'Austin', tags: ['city', 'food', 'budget'], line: 'Texas. Tacos, swimming holes and music after dark.' },
+  { name: 'Kansas City', tags: ['food', 'budget', 'city'], line: 'Missouri. Barbecue and jazz without the big-city prices.' },
+  { name: 'Napa Valley', tags: ['wine', 'food', 'slow'], line: 'California. Vineyards, long lunches and nothing planned before ten.' },
+  { name: 'Willamette Valley', tags: ['wine', 'slow', 'hike'], line: 'Oregon. Pinot country, forest walks and quiet farm stays.' },
+  { name: 'Asheville', tags: ['hike', 'food', 'budget', 'slow'], line: 'North Carolina. Blue Ridge views, craft beer and veggie-friendly food.' },
 ];
 const vibes = document.getElementById('vibes');
 const result = document.getElementById('result');

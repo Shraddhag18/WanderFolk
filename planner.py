@@ -253,52 +253,156 @@ def ai_plan(destination: str, days: int, travelers: list[str], memories: list[di
 # ---------------------------------------------------------------------------
 
 PROPOSAL_PROMPT = """You are WanderFolk, a travel planner for a group of friends who have not picked a destination yet.
-Suggest {n} trip destinations for this group, realistic for the trip length and the start city.
+Suggest {n} trip destinations for this group, anywhere in the United States: all 50 states, Washington DC and
+Puerto Rico, from big cities to small towns and national parks. Don't default to places near the start city or to
+California. Spread the options across different parts of the country (West Coast, Southwest, Mountain West, Midwest,
+South, Northeast, Alaska, Hawaii), with no more than two from the same state, unless the group asked to stay close
+or to drive. Keep each one realistic for the trip length: for 1 to 2 days, favor places a short flight or drive
+away; for longer trips, anywhere works. If someone named a place outside the US, suggest the closest US match.
 Use what each member told you: places they would love, food and dietary needs, how they like to travel, their own
 ideas for this trip, and feedback from past trips. If members named specific places, include the ones that fit.
 Make the options clearly different from each other, and be honest about trade-offs.
 Notes marked PRIVATE: use them to choose, but never quote them, never mention money amounts from them, and never
 say whose they are.
 JSON shape:
-{{"proposals": [{{"destination": "<place, region or country>", "tagline": "<max 10 words>",
+{{"proposals": [{{"destination": "<city, town or park>, <full state name>", "tagline": "<max 10 words>",
   "why": ["<a reason this fits, naming the member it comes from, max 20 words>"],
   "watch_out": "<one honest trade-off for this group, or ''>",
-  "travel": "<rough travel time from the start city>", "budget": "<$, $$ or $$$>",
+  "travel": "<drive or fly, and rough travel time from the start city>", "budget": "<$, $$ or $$$>",
   "highlights": ["<short thing to do>", "<short thing to do>", "<short thing to do>"]}}]}}
 Give 2 to 4 reasons per destination."""
 
-# Used when no AI model is configured: (destination, tagline, what it suits, budget, highlights)
+# Used when no AI model is configured: (destination, region, tagline, what it suits, budget, highlights).
+# Covers the whole country so offline suggestions aren't stuck near one coast.
 OFFLINE_DESTINATIONS = [
-    ("Lake Tahoe, California", "Alpine lake, trails and cabins", r"lake|hik|mountain|cabin|snow|ski|swim|nature|outdoor",
+    # West Coast
+    ("Lake Tahoe, California", "West Coast", "Alpine lake, trails and cabins", r"lake|hik|mountain|cabin|snow|ski|swim|nature|outdoor",
      "$$", ["Emerald Bay viewpoint", "Lakeside beach day", "Sunset hike"]),
-    ("Big Sur, California", "Dramatic coast and redwoods", r"coast|ocean|hik|scenic|camp|nature|view|outdoor",
+    ("Big Sur, California", "West Coast", "Dramatic coast and redwoods", r"coast|ocean|hik|scenic|camp|nature|view|outdoor",
      "$$", ["McWay Falls overlook", "Bixby Bridge", "Redwood trail"]),
-    ("Santa Cruz, California", "Easy beach town with a boardwalk", r"beach|surf|relax|short drive|taco|budget|cheap",
-     "$", ["Beach Boardwalk", "West Cliff Drive walk", "Tacos by the beach"]),
-    ("Yosemite National Park, California", "Granite cliffs and waterfalls", r"hik|waterfall|mountain|camp|nature|outdoor",
-     "$$", ["Valley floor loop", "Glacier Point", "Mirror Lake walk"]),
-    ("Napa Valley, California", "Food, wine and slow days", r"wine|food|restaurant|relax|spa|slow|vegetarian|vegan",
-     "$$$", ["Tasting at a small winery", "Oxbow Public Market", "Vineyard bike ride"]),
-    ("San Diego, California", "Sunny beaches and great food", r"beach|city|food|taco|zoo|warm|sun|museum",
+    ("San Diego, California", "West Coast", "Sunny beaches and great food", r"beach|city|food|taco|zoo|warm|sun|museum",
      "$$", ["La Jolla Cove", "Balboa Park", "Old Town tacos"]),
-    ("Portland, Oregon", "Food carts, coffee and forest walks", r"city|food|vegetarian|vegan|coffee|beer|art|rain",
+    ("Portland, Oregon", "West Coast", "Food carts, coffee and forest walks", r"city|food|vegetarian|vegan|coffee|beer|art|rain",
      "$$", ["Food cart pods", "Forest Park trail", "Powell's Books"]),
-    ("Joshua Tree, California", "Desert rocks and starry nights", r"desert|star|camp|climb|quiet|photo|budget|cheap",
-     "$", ["Hidden Valley loop", "Stargazing", "Pioneertown"]),
+    ("Seattle, Washington", "West Coast", "Markets, ferries and mountain views", r"city|food|coffee|seafood|ferry|island|music|rain",
+     "$$", ["Pike Place Market", "Ferry to Bainbridge Island", "Kerry Park at sunset"]),
+    ("Olympic National Park, Washington", "West Coast", "Rainforest, glaciers and wild beaches", r"forest|rainforest|hik|beach|camp|nature|wild|outdoor",
+     "$$", ["Hoh Rain Forest", "Hurricane Ridge", "Ruby Beach"]),
+    # Southwest
+    ("Grand Canyon, Arizona", "Southwest", "The big canyon, rim to river", r"canyon|hik|view|desert|camp|photo|nature|outdoor",
+     "$$", ["South Rim sunrise", "Bright Angel Trail", "Desert View Watchtower"]),
+    ("Sedona, Arizona", "Southwest", "Red rocks, trails and spas", r"desert|hik|spa|relax|red rock|yoga|view|star",
+     "$$$", ["Cathedral Rock trail", "Jeep tour", "Stargazing"]),
+    ("Santa Fe, New Mexico", "Southwest", "Adobe streets, art and green chile", r"art|food|history|culture|museum|spicy|chile|slow",
+     "$$", ["Canyon Road galleries", "Meow Wolf", "Green chile everything"]),
+    ("Las Vegas, Nevada", "Southwest", "Shows, food and desert day trips", r"party|nightlife|show|casino|city|food|fun|birthday|bachelor",
+     "$$", ["A big show", "Red Rock Canyon", "Late-night food crawl"]),
+    ("Zion National Park, Utah", "Southwest", "Slot canyons and red cliffs", r"canyon|hik|climb|river|desert|camp|nature|outdoor|adventure",
+     "$$", ["The Narrows", "Canyon Overlook Trail", "Springdale dinner"]),
+    ("Moab, Utah", "Southwest", "Arches, mountain bikes and big skies", r"arch|bike|desert|hik|adventure|star|camp|offroad|jeep",
+     "$$", ["Delicate Arch", "Mountain biking", "Dead Horse Point sunset"]),
+    # Mountain West
+    ("Denver and the Rockies, Colorado", "Mountain West", "City base with mountains next door", r"mountain|hik|beer|city|ski|snow|outdoor|music",
+     "$$", ["Red Rocks Amphitheatre", "Day trip to Rocky Mountain National Park", "Brewery crawl"]),
+    ("Aspen, Colorado", "Mountain West", "Snowy peaks and a pretty mountain town", r"ski|snow|mountain|luxury|spa|hik|winter|cabin",
+     "$$$", ["Maroon Bells", "Ski or snowshoe", "Après in town"]),
+    ("Yellowstone National Park, Wyoming", "Mountain West", "Geysers, wildlife and wide valleys", r"wildlife|geyser|nature|hik|camp|photo|animals|outdoor",
+     "$$", ["Old Faithful", "Grand Prismatic Spring", "Lamar Valley wildlife"]),
+    ("Jackson Hole, Wyoming", "Mountain West", "Teton views and a cowboy town", r"mountain|ski|snow|hik|wildlife|western|cowboy|view",
+     "$$$", ["Grand Teton viewpoints", "Jenny Lake", "Town Square"]),
+    ("Glacier National Park, Montana", "Mountain West", "Glacial lakes and alpine roads", r"lake|glacier|hik|mountain|scenic|camp|nature|outdoor",
+     "$$", ["Going-to-the-Sun Road", "Lake McDonald", "Hidden Lake trail"]),
+    ("Boise, Idaho", "Mountain West", "Easygoing city with rivers and hot springs", r"river|hot spring|relax|budget|cheap|float|outdoor|quiet",
+     "$", ["Float the Boise River", "Hot springs day trip", "Basque Block food"]),
+    # Midwest
+    ("Chicago, Illinois", "Midwest", "Architecture, lakefront and deep dish", r"city|food|museum|architecture|music|art|nightlife|pizza",
+     "$$", ["Architecture river cruise", "Lakefront bike ride", "Deep dish pizza"]),
+    ("Door County, Wisconsin", "Midwest", "Lake towns, cherries and fish boils", r"lake|relax|slow|cabin|bike|quiet|cherry|cheese",
+     "$$", ["Peninsula State Park", "Fish boil dinner", "Cave Point kayaking"]),
+    ("Traverse City, Michigan", "Midwest", "Dunes, beaches and wineries", r"lake|beach|wine|dune|relax|summer|food",
+     "$$", ["Sleeping Bear Dunes", "Old Mission wineries", "Cherry pie"]),
+    ("Minneapolis, Minnesota", "Midwest", "Lakes in the city and a big music scene", r"lake|city|music|bike|art|food|budget",
+     "$", ["Chain of Lakes", "First Avenue show", "Mill City Museum"]),
+    ("Kansas City, Missouri", "Midwest", "Barbecue and jazz", r"food|bbq|barbecue|jazz|music|city|budget|cheap",
+     "$", ["Barbecue crawl", "18th and Vine jazz", "Nelson-Atkins Museum"]),
+    # South
+    ("New Orleans, Louisiana", "South", "Music, food and late nights", r"music|jazz|food|party|nightlife|history|culture|city",
+     "$$", ["French Quarter walk", "Frenchmen Street jazz", "Beignets"]),
+    ("Nashville, Tennessee", "South", "Live music on every corner", r"music|country|party|nightlife|food|bachelor|birthday|city",
+     "$$", ["Broadway honky-tonks", "Grand Ole Opry", "Hot chicken"]),
+    ("Great Smoky Mountains, Tennessee", "South", "Misty ridges and cabins", r"mountain|hik|cabin|waterfall|nature|camp|budget|outdoor",
+     "$", ["Clingmans Dome", "Laurel Falls", "Cabin nights"]),
+    ("Asheville, North Carolina", "South", "Blue Ridge views and craft beer", r"mountain|beer|art|food|hik|relax|vegetarian|vegan",
+     "$$", ["Blue Ridge Parkway", "River Arts District", "Brewery hop"]),
+    ("Charleston, South Carolina", "South", "Historic streets and Lowcountry food", r"history|food|beach|slow|relax|seafood|architecture",
+     "$$", ["Rainbow Row", "Folly Beach", "Shrimp and grits"]),
+    ("Savannah, Georgia", "South", "Squares, oaks and slow walks", r"history|slow|walk|food|ghost|relax|architecture",
+     "$$", ["Forsyth Park", "Historic squares walk", "Ghost tour"]),
+    ("Miami, Florida", "South", "Beaches, Cuban food and nightlife", r"beach|nightlife|party|food|art|warm|sun|city",
+     "$$$", ["South Beach", "Little Havana", "Wynwood Walls"]),
+    ("Florida Keys, Florida", "South", "Island hopping and clear water", r"beach|island|snorkel|boat|relax|warm|sun|fish",
+     "$$$", ["Snorkel at Bahia Honda", "Key West sunset", "Seven Mile Bridge"]),
+    ("Austin, Texas", "South", "Live music, tacos and swimming holes", r"music|taco|food|bbq|swim|city|nightlife|budget",
+     "$$", ["Barton Springs Pool", "Sixth Street music", "Breakfast tacos"]),
+    ("Ozark Mountains, Arkansas", "South", "Lakes, caves and cheap cabins", r"lake|cabin|hik|cave|budget|cheap|float|nature",
+     "$", ["Buffalo National River", "Hot Springs", "Lakeside cabin"]),
+    # Northeast
+    ("New York City, New York", "Northeast", "Everything, all at once", r"city|food|museum|art|show|broadway|nightlife|shopping",
+     "$$$", ["A Broadway show", "Central Park", "Food crawl in Queens"]),
+    ("Boston, Massachusetts", "Northeast", "History, seafood and walkable streets", r"history|seafood|city|walk|museum|sport|college",
+     "$$", ["Freedom Trail", "North End dinner", "Harbor islands"]),
+    ("Acadia National Park, Maine", "Northeast", "Rocky coast and lobster rolls", r"coast|hik|lobster|seafood|ocean|nature|camp|bike",
+     "$$", ["Cadillac Mountain sunrise", "Jordan Pond", "Lobster rolls in Bar Harbor"]),
+    ("Stowe, Vermont", "Northeast", "Snowy hills, maple and cozy inns", r"snow|ski|cozy|cabin|fall|maple|relax|slow|cheese",
+     "$$", ["Ski or hike Mount Mansfield", "Maple sugarhouse", "Cheese and cider tasting"]),
+    ("Cape Cod, Massachusetts", "Northeast", "Beach towns and dunes", r"beach|seafood|bike|relax|slow|summer|ocean",
+     "$$$", ["Cape Cod National Seashore", "Provincetown", "Clam shack lunch"]),
+    ("Washington, District of Columbia", "Northeast", "Free museums and monuments", r"museum|history|free|budget|cheap|city|politic|monument",
+     "$$", ["Smithsonian museums", "Monuments at night", "Eastern Market"]),
+    # Alaska and Hawaii
+    ("Anchorage and Kenai Fjords, Alaska", "Alaska", "Glaciers, whales and huge wild country", r"glacier|wildlife|whale|wild|adventure|hik|snow|northern lights",
+     "$$$", ["Kenai Fjords boat tour", "Exit Glacier", "Seward harbor"]),
+    ("Maui, Hawaii", "Hawaii", "Beaches, waterfalls and a volcano sunrise", r"beach|island|snorkel|surf|warm|relax|waterfall|honeymoon",
+     "$$$", ["Haleakalā sunrise", "Road to Hana", "Snorkel at Molokini"]),
+    ("Big Island, Hawaii", "Hawaii", "Volcanoes, black sand and stargazing", r"volcano|beach|island|snorkel|star|hik|adventure|warm",
+     "$$$", ["Hawaiʻi Volcanoes National Park", "Punaluʻu black sand beach", "Maunakea stars"]),
+    ("San Juan, Puerto Rico", "Caribbean", "Old city streets and warm water, no passport needed", r"beach|island|history|food|nightlife|warm|rum|salsa",
+     "$$", ["Old San Juan walk", "El Yunque rainforest", "Bioluminescent bay"]),
 ]
 
 
+def _named(place: str, memories: list[dict]) -> bool:
+    """Did someone name this place (its city/park or its state) in a note?"""
+    city, state = [x.strip().lower() for x in (place.split(",") + [""])[:2]]
+    words = [w for w in re.split(r"\s+and\s+", city) if len(w) > 3] + ([state] if state else [])
+    return any(re.search(rf"\b{re.escape(w)}\b", m["memory"], re.I) for m in memories for w in words)
+
+
 def offline_proposals(memories: list[dict], n: int = 6) -> list[dict]:
-    """Rank a small built-in list by how many of the group's notes each place matches."""
-    out = []
-    for destination, tagline, suits, budget, highlights in OFFLINE_DESTINATIONS:
+    """Rank the built-in list by what the group said, then spread the picks across the country."""
+    scored = []
+    for i, (destination, region, tagline, suits, budget, highlights) in enumerate(OFFLINE_DESTINATIONS):
         hits = [m for m in memories if re.search(suits, m["memory"], re.I)]
         why = [f"{m.get('traveler_name') or m.get('traveler') or 'Someone'} said: “{m['memory']}”"
                for m in hits if not m.get("private")][:3]
-        out.append((len(hits), {"destination": destination, "tagline": tagline, "budget": budget, "travel": "",
-                                "why": why or ["A good all-round pick for a group"], "watch_out": "",
-                                "highlights": highlights}))
-    return [prop for _, prop in sorted(out, key=lambda x: -x[0])[:n]]
+        score = len(hits) + (3 if _named(destination, memories) else 0)
+        scored.append((score, i, region, {"destination": destination, "tagline": tagline, "budget": budget, "travel": "",
+                                          "why": why or ["A good all-round pick for a group"], "watch_out": "",
+                                          "highlights": highlights}))
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    picks, regions = [], set()
+    for score, _, region, prop in scored:         # first pass: best match from each region
+        if region not in regions or (score >= 3 and _named(prop["destination"], memories)):
+            picks.append(prop)
+            regions.add(region)
+        if len(picks) == n:
+            return picks
+    for _, _, _, prop in scored:                    # then fill with the next best anywhere
+        if prop not in picks:
+            picks.append(prop)
+        if len(picks) == n:
+            break
+    return picks
 
 
 def _leaks(text: str, memories: list[dict]) -> bool:

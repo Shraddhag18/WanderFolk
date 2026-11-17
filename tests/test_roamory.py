@@ -118,6 +118,20 @@ class Proposals(unittest.TestCase):
         self.assertEqual(proposals[0]["destination"], "Lake Tahoe, California")
         self.assertTrue(any("Priya" in reason for reason in proposals[0]["why"]))
 
+    def test_offline_proposals_span_the_country(self):
+        regions = {d[0]: d[1] for d in planner.OFFLINE_DESTINATIONS}
+        self.assertTrue({"West Coast", "Southwest", "Mountain West", "Midwest", "South", "Northeast", "Alaska", "Hawaii"}
+                        <= set(regions.values()))
+        picks = planner.offline_proposals([m("Priya", "Somewhere with good food and hiking")], 6)
+        self.assertEqual(len({regions[p["destination"]] for p in picks}), 6)    # six picks, six parts of the US
+        named = planner.offline_proposals([m("Arjun", "I've always wanted to see New Orleans"), m("Maya", "Maybe Maine?")], 6)
+        self.assertEqual(named[0]["destination"], "New Orleans, Louisiana")
+        self.assertIn("Acadia National Park, Maine", [p["destination"] for p in named])
+
+    def test_claude_is_asked_for_the_whole_country(self):
+        self.assertIn("all 50 states", planner.PROPOSAL_PROMPT)
+        self.assertIn("Don't default to places near the start city", planner.PROPOSAL_PROMPT)
+
     def test_proposals_never_quote_private_notes(self):
         notes = [m("Maya", "My budget is about $100 a day, keep it cheap", "travel", private=True)]
         proposals, _ = planner.propose_trips("San Francisco", 2, ["Maya"], notes)
