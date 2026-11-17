@@ -70,6 +70,7 @@ img { display: block; }
   linear-gradient(180deg, #4A3F82 0%, #7C5296 16%, #C2649A 32%, #EE7F86 46%, #FBA672 58%, #FFCB86 68%, #FFE2AE 78%); }
 .sun { position: absolute; left: 47%; top: 60%; width: clamp(90px, 11vw, 160px); aspect-ratio: 1; border-radius: 50%; translate: -50% -50%;
   background: radial-gradient(circle, #FFF4D6 0 40%, #FFC46B 56%, rgb(255 150 90 / 0) 72%); animation: rise 2.4s cubic-bezier(.2,.7,.2,1) both; }
+.snow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 @keyframes rise { from { transform: translateY(70px); opacity: .2; } }
 .range { position: absolute; left: -4%; bottom: 0; width: 108%; height: 74%; object-fit: cover; object-position: 50% 100%;
   transform: translate3d(var(--px, 0px), var(--py, 0px), 0); will-change: transform; animation: settle 1.6s cubic-bezier(.2,.7,.2,1) both; }
@@ -239,6 +240,7 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   .sun, .range, .van.is-driving .van__body { animation: none; }
   .range { transform: none; }
+  .snow { display: none; }
   .btn, .chips span, .recent a { transition: none; }
 }
 

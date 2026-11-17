@@ -37,8 +37,9 @@ class Api(unittest.TestCase):
 
     def test_every_trip_gets_a_short_join_code(self):
         code = self.view()["trip"]["code"]
-        self.assertRegex(code, r"^[A-HJKMNP-Z2-9]{3}-[A-HJKMNP-Z2-9]{3}$")
-        for typed in (code, code.lower(), code.replace("-", ""), f" {code[:3]} {code[4:]} "):
+        self.assertRegex(code, r"^[256789BCDFGHJKMNPQRSTVWXYZ]{3}-[256789BCDFGHJKMNPQRSTVWXYZ]{3}$")  # no vowels, no look-alikes
+        wide = "".join(chr(ord(c) + 0xFEE0) for c in code.replace("-", ""))  # full-width, as some phone keyboards type
+        for typed in (code, code.lower(), code.replace("-", ""), f" {code[:3]} {code[4:]} ", code.replace("-", "."), wide):
             r = self.c.get("/api/lookup", params={"link": typed})
             self.assertEqual(r.json().get("id"), self.id, typed)
         self.assertEqual(self.c.get("/api/lookup", params={"link": "ZZZ-ZZZ"}).status_code, 404)
@@ -54,6 +55,19 @@ class Api(unittest.TestCase):
         # deleting the trip retires its code
         self.c.delete(f"/api/trips/{self.id}")
         self.assertEqual(self.c.get("/api/lookup", params={"link": fresh}).status_code, 404)
+
+    def test_codes_forgive_look_alikes_and_older_codes_still_work(self):
+        server.trips_db.save(server.CODES, {"id": "AE2U3K", "trip": self.id})   # a code from before vowels were dropped
+        server.trips_db.save(server.CODES, {"id": "B0CD17", "trip": self.id})   # one with a zero and a one
+        for typed in ("ae2u3k", "AE2-U3K", "bocd17", "B0CDI7", "b0cdl7"):
+            self.assertEqual(self.c.get("/api/lookup", params={"link": typed}).json().get("id"), self.id, typed)
+
+    def test_wrong_codes_are_limited(self):
+        server._misses.clear()
+        for _ in range(server.MAX_MISSES):
+            self.assertEqual(self.c.get("/api/lookup", params={"link": "ZZZ-ZZZ"}).status_code, 404)
+        self.assertEqual(self.c.get("/api/lookup", params={"link": "ZZZ-ZZZ"}).status_code, 429)
+        server._misses.clear()
 
     def test_lookup_accepts_code_or_link(self):
         self.assertEqual(self.c.get("/api/lookup", params={"link": self.id}).json()["id"], self.id)

@@ -1,4 +1,4 @@
-// WanderFolk start page: the moving range and lake, the road and campervan, the "try it" preview, and the start / join forms.
+// WanderFolk start page: the moving range, lake and snow, the road and campervan, the "try it" preview, and the start / join forms.
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const tripUrl = (id) => `/trip/?trip=${encodeURIComponent(id)}`;
@@ -31,6 +31,38 @@ if (!reduced) {
   });
   hero.addEventListener('pointerleave', () => { px = 0; py = 0; kick(); });
   addEventListener('scroll', () => { if (scrollY < innerHeight * 1.2) { raf = 0; paint(); } }, { passive: true });
+}
+
+// ---------- snow drifting down over the lake at sunset (runs only while the hero is on screen) ----------
+// soft, warm-white flakes that fade in below the top of the sky, so they read as falling snow, not stars
+const canvas = document.getElementById('snow');
+if (canvas && !reduced) {
+  const ctx = canvas.getContext('2d');
+  let flakes = [], w = 0, h = 0, on = true, raf = 0;
+  const flake = (y) => ({ x: Math.random() * w, y, r: Math.random() * 2.2 + 0.9, s: Math.random() * 0.6 + 0.35,
+    d: Math.random() * Math.PI * 2, a: Math.random() * 0.45 + 0.45 });
+  const size = () => {
+    const r = Math.min(devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * r; canvas.height = h * r; ctx.setTransform(r, 0, 0, r, 0, 0);
+    flakes = Array.from({ length: Math.round(Math.min(120, w * h / 10000)) }, () => flake(Math.random() * h));
+  };
+  const tick = () => {
+    ctx.clearRect(0, 0, w, h);
+    for (const f of flakes) {
+      f.y += f.s; f.d += 0.012; f.x += Math.sin(f.d) * 0.35;
+      if (f.y > h) Object.assign(f, flake(-6));
+      const fade = Math.min(1, Math.max(0, f.y / (h * 0.18)));      // nothing sits still at the very top like a star
+      ctx.fillStyle = `rgba(255,246,238,${(f.a * fade * 0.35).toFixed(3)})`;  // a faint halo
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(255,250,245,${(f.a * fade).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+    }
+    raf = on ? requestAnimationFrame(tick) : 0;
+  };
+  size(); addEventListener('resize', size);
+  new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on && !raf) tick(); }).observe(hero);
+  tick();
 }
 
 // ---------- a campervan drives down the road as you scroll, and each camp lights up when it gets there ----------

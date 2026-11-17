@@ -13,6 +13,7 @@ import os
 import re
 import secrets
 import threading
+import unicodedata
 import time
 import uuid
 from datetime import datetime
@@ -23,7 +24,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException  # noqa: E402
+from fastapi import FastAPI, HTTPException, Request  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
@@ -33,7 +34,13 @@ from memory_store import APP_ID, make_store, make_trip_store, traveler_id  # noq
 
 BUCKET = "trips"
 CODES = "codes"  # join code -> trip id, kept as small rows next to the trips
-CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no 0/O, 1/I/L: easy to read out loud and type
+# New codes: no vowels (and no 0/1/3/4, which stand in for O/I/E/A) so a code can't spell a word, and no look-alikes.
+CODE_ALPHABET = "256789BCDFGHJKMNPQRSTVWXYZ"
+# What a typed code may contain: any letter or digit, so codes made before this change (which had vowels) still work.
+# Look-alikes are folded together the way Crockford's base 32 does it: O is 0, I and L are 1.
+CODE_TYPED = set("0123456789ABCDEFGHJKMNPQRSTUVWXYZ")
+LOOKALIKES = str.maketrans({"O": "0", "I": "1", "L": "1"})
+MAX_MISSES, MISS_WINDOW = 20, 600  # wrong codes allowed per address per 10 minutes, so codes can't be guessed by brute force
 MAX_MEMBERS = 12
 MAX_SUGGESTS, MAX_PLANS = 6, 15                     # AI runs per trip, so one trip can't run up the bill
 CREATE_CODE = os.getenv("CREATE_CODE", "").strip()  # if set, starting a trip needs this code; joining never does
@@ -68,9 +75,9 @@ def parse_names(raw: str) -> list[str]:
 
 
 def clean_code(text: str) -> str | None:
-    """'k7p-4qm', 'K7P 4QM' and 'K7P4QM' are all the same code. None if it can't be one."""
-    code = re.sub(r"[\s-]", "", text or "").upper()
-    return code if len(code) == 6 and all(c in CODE_ALPHABET for c in code) else None
+    """'k7p-4qm', 'K7P 4QM', 'k7p.4qm' and full-width 'Ｋ７Ｐ４ＱＭ' are all the same code. None if it can't be one."""
+    code = re.sub(r"[^0-9A-Za-z]", "", unicodedata.normalize("NFKC", text or "")).upper().translate(LOOKALIKES)
+    return code if len(code) == 6 and set(code) <= CODE_TYPED else None
 
 
 def show_code(code: str) -> str:
@@ -273,10 +280,29 @@ def config():
     }
 
 
+_misses: dict[str, list[float]] = {}
+_misses_lock = threading.Lock()
+
+
+def _recent_misses(who: str, add: bool = False) -> int:
+    now = time.time()
+    with _misses_lock:
+        hits = [t for t in _misses.get(who, []) if now - t < MISS_WINDOW] + ([now] if add else [])
+        if hits:
+            _misses[who] = hits
+        else:
+            _misses.pop(who, None)
+        return len(hits)
+
+
 @app.get("/api/lookup")
-def lookup(link: str):
+def lookup(link: str, request: Request):
+    who = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip() or (request.client.host if request.client else "?")
+    if _recent_misses(who) >= MAX_MISSES:
+        raise HTTPException(429, "Too many codes that didn't match. Wait a few minutes, then try again.")
     trip = find_trip(link)
     if not trip:
+        _recent_misses(who, add=True)
         raise HTTPException(404, "That code or link doesn't match a trip. Check it with whoever sent it.")
     return {"id": trip["id"], "name": trip["name"]}
 

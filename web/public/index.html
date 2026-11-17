@@ -42,6 +42,7 @@
   <section class="hero" id="top" aria-labelledby="hero-h">
     <div class="sky" aria-hidden="true">
       <div class="sun"></div>
+      <canvas class="snow" id="snow"></canvas>
       <picture><source media="(min-aspect-ratio: 5/4)" srcset="art/range-far-wide.svg"><img class="range range--far" data-depth="0.15" src="art/range-far.svg" alt=""></picture>
       <picture><source media="(min-aspect-ratio: 5/4)" srcset="art/range-near-wide.svg"><img class="range range--near" data-depth="0.6" src="art/range-near.svg" alt=""></picture>
       <picture><source media="(min-aspect-ratio: 5/4)" srcset="art/range-front-wide.svg"><img class="range range--front" data-depth="0.9" src="art/range-front.svg" alt=""></picture>
@@ -244,7 +245,7 @@
         <div class="field">
           <label for="f-link">Trip code or link</label>
           <input id="f-link" name="trip" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required
-                 placeholder="e.g. K7P-4QM" aria-describedby="f-link-hint f-link-err">
+                 placeholder="e.g. K7P-9QM" aria-describedby="f-link-hint f-link-err">
           <p class="hint" id="f-link-hint">The 6-character code from whoever started the trip, or the link they sent.</p>
           <p class="err" id="f-link-err" hidden>Enter the trip code or paste the link a friend sent you.</p>
         </div>
