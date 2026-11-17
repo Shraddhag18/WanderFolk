@@ -2,15 +2,15 @@
 
 **A project I built at SF Tech Week 2026**, during the /build-with-AI Buildathon (Mem0 × SVAI Hub × The Gen Academy).
 
-WanderFolk is a simple travel planner agent for a group of friends. Everyone says where they'd love to go, what they eat, how they like to travel and what to pack. WanderFolk proposes 5-6 destinations that fit the whole group, the group picks one, and it shows the Google Map, a day-by-day itinerary and the reason behind every choice.
+WanderFolk is a simple travel planner agent for a group of friends. Everyone says where they'd love to go, what they eat, how they like to travel and what to pack. WanderFolk proposes 5-6 destinations anywhere in the United States that fit the whole group, the group picks one, and it shows the Google Map, a day-by-day itinerary and the reason behind every choice.
 
 ## How it works
 
-1. **Start a trip:** give it a name, a start city, the number of days, and up to 12 people. No destination needed yet. You get an invite link to share; only people with the link can open the trip.
+1. **Start a trip:** give it a name, a start city, the number of days, and up to 12 people. No destination needed yet. You get an invite link and a short trip code (like `X5P-RT8`) to share; only people with one of them can open the trip.
 2. **Who are you?** Each person picks their name once; their phone or laptop remembers it.
 3. **Everyone's input:** places you'd love, food and dietary needs, how you like to travel, and your own idea for this trip. Anything can be marked private.
 4. **Packing list:** everyone brainstorms what to bring and ticks things off as they're packed.
-5. **Proposals:** WanderFolk suggests 5-6 destinations, each with why it fits the group, what to watch out for, rough travel time and budget. Vote, then choose one, or type your own.
+5. **Proposals:** WanderFolk suggests 5-6 destinations from across the country (all 50 states, DC and Puerto Rico), each with why it fits the group, what to watch out for, rough travel time and budget. Vote, then choose one, or type your own.
 6. **Our trip:** an embedded Google Map, directions from your start city, an itinerary, and the note behind each choice.
 7. **After the trip:** leave feedback, so the next trip avoids the same mistakes.
 
@@ -57,7 +57,7 @@ ANTHROPIC_API_KEY=your-anthropic-key
 
 It also runs with no keys at all: memory falls back to a local file, proposals come from a small built-in list of places, and the itinerary comes from simple rules.
 
-Optional: set `CREATE_CODE=some-word` to require that word before anyone can start a new trip. Joining a trip by its link never needs it.
+Optional: set `CREATE_CODE=some-word` to require that word before anyone can start a new trip. Joining a trip by its link or code never needs it.
 
 Tests: `python -m unittest discover tests -v`
 
@@ -80,9 +80,9 @@ Then deploy on [Vercel](https://vercel.com): import this repo and add the same k
 
 | File | What it does |
 |---|---|
-| `server.py` | The API the web app talks to; filters out other people's private notes |
-| `web/public/index.html`, `landing.css`, `landing.js` | The start page: a dawn mountain range that moves with the pointer, the four steps as camps on a trail, a "what's your group into?" preview, and the start and join forms |
-| `web/public/art/`, `web/tools/mountains.py` | The snow-capped mountain artwork, and the script that draws it (`python3 web/tools/mountains.py web/public/art`) |
+| `server.py` | The API the web app talks to; filters out other people's private notes and handles trip codes |
+| `web/public/index.html`, `landing.css`, `landing.js` | The start page: snowfall over a lake below the mountains at sunset, the four steps as camps on a road a campervan drives down as you scroll, a "what's your group into?" preview, and the start and join forms |
+| `web/public/art/`, `web/tools/mountains.py` | The mountains, lake and grassy shore, and the script that draws them (`python3 web/tools/mountains.py web/public/art`) |
 | `web/src/`, `web/trip/` | The trip app (React + Vite) at `/trip/`: the trip page and its six tabs, installable on phones |
 | `planner.py` | Proposes destinations, builds the itinerary with a cited reason for every choice, and runs the privacy guard |
 | `memory_store.py` | Mem0 scopes (`user_id`, `run_id`, `agent_id`, `app_id`) with an offline fallback, plus where trips are saved (local file or Supabase) |
@@ -91,4 +91,4 @@ Then deploy on [Vercel](https://vercel.com): import this repo and add the same k
 
 ## Built with
 
-Python, FastAPI, React, [Mem0](https://mem0.ai) for memory, Claude for proposals and itineraries, and Google Maps for the map.
+Python, FastAPI, React + Vite, [Mem0](https://mem0.ai) for memory, Claude (Haiku 4.5) for proposals and itineraries, [Supabase](https://supabase.com) for trips, Google Maps for the map, and [Vercel](https://vercel.com) for hosting.
